@@ -1,4 +1,5 @@
 {
+  "$schema": "../../node_modules/@effect/tsgo/schema.json",
   "compilerOptions": {
     "strict": true,
     "esModuleInterop": true,
@@ -12,6 +13,11 @@
     "paths": {
       "@/*": ["./src/*"],
       "@sync-disc/ui/*": ["../../packages/ui/src/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   }
 }

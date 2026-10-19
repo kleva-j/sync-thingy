@@ -19,17 +19,19 @@
     "deploy": "vp run --filter @sync-disc/infra deploy",
     "destroy": "vp run --filter @sync-disc/infra destroy",
     "env:generate": "varlock codegen --path ./apps/web/",
-    "postinstall": "varlock codegen --path ./apps/web/"
+    "postinstall": "varlock codegen --path ./apps/web/",
+    "prepare": "effect-tsgo patch --typescript --oxlint"
   },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260906.1",
+    "@effect/tsgo": "0.53.4",
     "@sync-disc/config": "workspace:*",
     "@types/node": "^26.4.1",
     "oxfmt": "^0.72.0",
-    "oxlint": "^1.87.0",
+    "oxlint": "1.88.0",
     "rolldown": "1.2.13",
     "typescript": "catalog:",
     "varlock": "catalog:",

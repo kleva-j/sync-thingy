@@ -1,0 +1,39 @@
+{
+  "name": "sync-disc",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vp run -r dev",
+    "build": "vp run -r build",
+    "check-types": "vp run -r check-types",
+    "check": "oxlint && oxfmt --write",
+    "lint": "vp lint",
+    "format": "vp fmt",
+    "staged": "vp staged",
+    "hooks:setup": "vp config",
+    "dev:web": "vp run --filter web dev:bare",
+    "deploy": "vp run --filter @sync-disc/infra deploy",
+    "destroy": "vp run --filter @sync-disc/infra destroy",
+    "env:generate": "varlock codegen --path ./apps/web/",
+    "postinstall": "varlock codegen --path ./apps/web/"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260906.1",
+    "@sync-disc/config": "workspace:*",
+    "@types/node": "^26.4.1",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
+    "rolldown": "1.2.13",
+    "typescript": "catalog:",
+    "varlock": "catalog:",
+    "vite-plus": "1.1.0"
+  },
+  "packageManager": "pnpm@11.21.0"
+}

@@ -28,14 +28,14 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
+    "check-types": "tsc --noEmit",
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@effect/sql": "^0.52.1",
     "@sync-disc/config": "workspace:*",
-    "@effect/platform": "catalog:",
-    "effect": "catalog:",
+    "@sync-disc/db": "workspace:*",
     "core": "workspace:*",
+    "effect": "catalog:",
     "sync-engine": "workspace:*"
   },
   "devDependencies": {

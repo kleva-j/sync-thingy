@@ -84,12 +84,21 @@ importers:
 
   apps/server:
     dependencies:
+      '@effect/platform':
+        specifier: 'catalog:'
+        version: 0.97.2(effect@4.0.5)
+      '@effect/sql':
+        specifier: ^0.52.1
+        version: 0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5))(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5)
       '@sync-disc/config':
         specifier: workspace:*
         version: link:../../packages/config
       core:
         specifier: workspace:*
         version: link:../../packages/core
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
       sync-engine:
         specifier: workspace:*
         version: link:../../packages/sync-engine
@@ -664,6 +673,19 @@ packages:
   '@dotenvx/primitives@0.8.0':
     resolution: {integrity: sha512-VYJy0uhFm9zTJ1TxBaW/pA8bjbOM/OttaNMwZ1RHG4JKyRG7DhSdiqD1ipQoAyoD22olUtxbP78W9xY3Wd11bg==}
 
+  '@effect/experimental@0.61.1':
+    resolution: {integrity: sha512-+P+PgGQeE2fXmsm63YoyENNcQIc7OiCkY4/HLkEdTvq93syfGIpwDfQD8u3xODMHJhZ5ZtRZHH4+UedFO0tLiA==}
+    peerDependencies:
+      '@effect/platform': ^0.97.1
+      effect: ^3.22.1
+      ioredis: ^5
+      lmdb: ^3
+    peerDependenciesMeta:
+      ioredis:
+        optional: true
+      lmdb:
+        optional: true
+
   '@effect/platform-bun@4.0.5':
     resolution: {integrity: sha512-tB/GapZ/bVoCbwRgnojGP4TwopvkMoFoSCipXT1sf0guvG/2oRVhWzJW/1vkrYFEdLM7XyRnVVLrSJyqdok7DA==}
     peerDependencies:
@@ -696,6 +718,13 @@ packages:
     resolution: {integrity: sha512-TGlU65ZJJMa81I7EoicQXxhRsJDxDPz6A/PNOPzMYRgmCdLs6EsTTXIkKZ+8apb7pl2o0OKVcrT6i6mGlluyLg==}
     peerDependencies:
       effect: ^4.0.5
+
+  '@effect/sql@0.52.1':
+    resolution: {integrity: sha512-dUVPjlUgpga6sDa/MtYipHAqzHx2St41hxI00nXTBt4IBBJaf2lTGaOvlEoBg/q6PHVAgSoKnxe19pWUvabC9g==}
+    peerDependencies:
+      '@effect/experimental': ^0.61.1
+      '@effect/platform': ^0.97.1
+      effect: ^3.22.1
 
   '@effect/tsgo-darwin-arm64@0.53.4':
     resolution: {integrity: sha512-NVU043pBMzheL+IYoG13emaYqZTzrTGwhLZ2tXScqLCBWPwXc0SB1zt038v4/WW3aHF+MbIHwTKTPi/bcpwo5g==}
@@ -4402,6 +4431,10 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+    hasBin: true
+
   valibot@1.2.0:
     resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
     peerDependencies:
@@ -4986,6 +5019,12 @@ snapshots:
 
   '@dotenvx/primitives@0.8.0': {}
 
+  '@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5)':
+    dependencies:
+      '@effect/platform': 0.97.2(effect@4.0.5)
+      effect: 4.0.5
+      uuid: 11.1.1
+
   '@effect/platform-bun@4.0.5(effect@4.0.5)':
     dependencies:
       '@effect/platform-node-shared': 4.0.5(effect@4.0.5)
@@ -5028,6 +5067,13 @@ snapshots:
   '@effect/sql-sqlite-do@4.0.5(effect@4.0.5)':
     dependencies:
       effect: 4.0.5
+
+  '@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5))(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5)':
+    dependencies:
+      '@effect/experimental': 0.61.1(@effect/platform@0.97.2(effect@4.0.5))(effect@4.0.5)
+      '@effect/platform': 0.97.2(effect@4.0.5)
+      effect: 4.0.5
+      uuid: 11.1.1
 
   '@effect/tsgo-darwin-arm64@0.53.4':
     optional: true
@@ -8080,6 +8126,8 @@ snapshots:
       react: 19.3.1
 
   util-deprecate@1.0.2: {}
+
+  uuid@11.1.1: {}
 
   valibot@1.2.0(typescript@7.0.2):
     optionalDependencies:

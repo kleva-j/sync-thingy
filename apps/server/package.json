@@ -31,7 +31,10 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@effect/sql": "^0.52.1",
     "@sync-disc/config": "workspace:*",
+    "@effect/platform": "catalog:",
+    "effect": "catalog:",
     "core": "workspace:*",
     "sync-engine": "workspace:*"
   },

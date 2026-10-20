@@ -5,22 +5,21 @@ import { Context, Effect, Layer, ManagedRuntime } from "effect";
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { electricSync } from "@electric-sql/pglite-sync";
 import { drizzle } from "drizzle-orm/pglite";
-import { spikeItems } from "@sync-disc/db";
+
+import * as schema from "@sync-disc/db/local-schema";
 
 import { localDatabaseError } from "./errors";
 import { runMigrations } from "./migrations";
 
 import PGliteWorkerCtor from "./pglite.worker?worker";
 
-const DATA_DIR = "idb://sync-disc-spike";
-const schema = { spikeItems };
+const DATA_DIR = "idb://sync-disc";
 
 export type LocalSchema = typeof schema;
-export type SpikeItem = typeof spikeItems.$inferSelect;
 
 export type LocalPg = PGliteWorker &
   PGliteInterfaceExtensions<{ electric: ReturnType<typeof electricSync> }>;
-  
+
 export type LocalDrizzle = PgliteDatabase<LocalSchema>;
 
 export class LocalDatabase extends Context.Service<
@@ -29,7 +28,7 @@ export class LocalDatabase extends Context.Service<
     readonly pg: LocalPg;
     readonly db: LocalDrizzle;
   }
->()("@sync-disc/web/LocalDatabase") { }
+>()("@sync-disc/web/LocalDatabase") {}
 
 const openLocalDatabase = Effect.gen(function* () {
   const worker = yield* Effect.acquireRelease(

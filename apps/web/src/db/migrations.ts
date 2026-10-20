@@ -1,9 +1,9 @@
 import type { PGliteInterface } from "@electric-sql/pglite";
+import type { LocalDatabaseError } from '@/db/errors'
 
-import { spikeMigrations } from "@sync-disc/db/migrations";
+import { localMigrations } from "@sync-disc/db/migrations";
+import { localDatabaseError } from "@/db/errors";
 import { Effect } from "effect";
-
-import { type LocalDatabaseError, localDatabaseError } from "./errors";
 
 const MIGRATION_LOCK_ID = 728_401;
 
@@ -17,38 +17,31 @@ const attempt = <A>(
   });
 
 export const runMigrations = (pg: PGliteInterface): Effect.Effect<void, LocalDatabaseError> =>
-  Effect.gen(function* () {
-    yield* attempt("create local_migrations", () =>
-      pg.exec(`
-        CREATE TABLE IF NOT EXISTS local_migrations (
-          id text PRIMARY KEY NOT NULL,
-          name text NOT NULL,
-          hash text NOT NULL,
-          applied_at timestamptz NOT NULL DEFAULT now()
-        );
-      `),
-    );
+  attempt("apply local migrations", () =>
+    pg.transaction(async (tx) => {
+      await tx.query(`SELECT pg_advisory_xact_lock($1)`, [MIGRATION_LOCK_ID]);
 
-    yield* attempt("apply local migrations", () =>
-      pg.transaction(async (tx) => {
-        await tx.query(`SELECT pg_advisory_xact_lock($1)`, [MIGRATION_LOCK_ID]);
+      const ledger = await tx.query<{ name: string | null }>(
+        `SELECT to_regclass('public.local_migrations') AS name`,
+      );
 
-        for (const migration of spikeMigrations) {
-          const applied = await tx.query<{ id: string }>(
-            `SELECT id FROM local_migrations WHERE id = $1`,
-            [migration.id],
-          );
-          if (applied.rows.length > 0) {
-            continue;
-          }
+      let appliedIds = new Set<number>();
+      if (ledger.rows[0]?.name != null) {
+        const applied = await tx.query<{ id: number }>(`SELECT id FROM local_migrations`);
+        appliedIds = new Set(applied.rows.map((row) => row.id));
+      }
 
-          await tx.exec(migration.sql);
-          await tx.query(`INSERT INTO local_migrations (id, name, hash) VALUES ($1, $2, $3)`, [
-            migration.id,
-            migration.name,
-            migration.hash,
-          ]);
+      for (const migration of localMigrations) {
+        if (appliedIds.has(migration.id)) {
+          continue;
         }
-      }),
-    );
-  });
+
+        await tx.exec(migration.sql);
+        await tx.query(`INSERT INTO local_migrations (id, name, hash) VALUES ($1, $2, $3)`, [
+          migration.id,
+          migration.name,
+          migration.hash,
+        ]);
+      }
+    }),
+  );

@@ -1,0 +1,29 @@
+{
+  "name": "@sync-disc/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./migrations": "./src/spike-migrations.generated.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "migrations:build": "node scripts/build-migrations.mjs",
+    "migrations:generate": "drizzle-kit generate --config=drizzle.spike.config.ts && node scripts/build-migrations.mjs",
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-sync": "0.6.11",
+    "drizzle-orm": "0.45.4",
+    "uuidv7": "1.2.1"
+  },
+  "devDependencies": {
+    "@sync-disc/config": "workspace:*",
+    "@types/node": "^26.6.5",
+    "drizzle-kit": "0.31.11",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

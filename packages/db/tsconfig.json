@@ -1,0 +1,9 @@
+{
+  "extends": "@sync-disc/config/tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["drizzle.spike.config.ts", "scripts/**/*.mjs", "src/**/*.ts"]
+}

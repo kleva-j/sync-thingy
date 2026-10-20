@@ -5,24 +5,31 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./migrations": "./src/spike-migrations.generated.ts"
+    "./local-schema": "./src/local-schema.ts",
+    "./migrations": "./src/migrations.generated.ts",
+    "./schema": "./src/schema.ts",
+    "./server-schema": "./src/server-schema.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "migrations:build": "node scripts/build-migrations.mjs",
-    "migrations:generate": "drizzle-kit generate --config=drizzle.spike.config.ts && node scripts/build-migrations.mjs",
+    "migrations:build": "node scripts/build-migrations.mjs drizzle/local src/migrations.generated.ts localMigrations && oxfmt src/migrations.generated.ts",
+    "migrations:check:local": "vp test tests/local-migrations.test.ts",
+    "migrations:check:server": "node scripts/check-server-migrations.mjs",
+    "migrations:generate": "pnpm run migrations:generate:local && pnpm run migrations:generate:server",
+    "migrations:generate:local": "drizzle-kit generate --config=drizzle.local.config.ts && pnpm run migrations:build && oxfmt drizzle/local/meta",
+    "migrations:generate:server": "drizzle-kit generate --config=drizzle.server.config.ts && oxfmt drizzle/server/meta",
     "test": "vp test"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.10",
     "@electric-sql/pglite-sync": "0.6.11",
-    "drizzle-orm": "0.45.4",
-    "uuidv7": "1.2.1"
+    "drizzle-orm": "0.45.4"
   },
   "devDependencies": {
     "@sync-disc/config": "workspace:*",
     "@types/node": "^26.6.5",
     "drizzle-kit": "0.31.11",
+    "pg": "^8.23.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

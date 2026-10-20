@@ -12,9 +12,14 @@
     "env:generate": "varlock codegen"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-sync": "0.6.11",
+    "@sync-disc/db": "workspace:*",
     "@sync-disc/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router": "^1.170.44",
+    "drizzle-orm": "0.45.4",
+    "effect": "catalog:",
     "lucide-react": "^1.56.0",
     "next-themes": "catalog:",
     "react": "^19.3.0",

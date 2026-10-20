@@ -17,7 +17,7 @@
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -28,14 +28,13 @@
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
+    "check-types": "tsc --noEmit",
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
     "@sync-disc/config": "workspace:*",
     "effect": "catalog:",
-    "@effect/platform": "catalog:",
-    "@effect/platform-node": "catalog:"
-
+    "uuidv7": "1.2.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

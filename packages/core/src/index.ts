@@ -1,3 +1,1 @@
-export function fn() {
-  return "Hello, Vite+!";
-}
+export * from "./domain/index.ts";

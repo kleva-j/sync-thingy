@@ -6,7 +6,7 @@
     "types": ["node"]
   },
   "include": [
-    "drizzle.local.config.ts",
+    "drizzle.client.config.ts",
     "drizzle.server.config.ts",
     "scripts/**/*.mjs",
     "src/**/*.ts",

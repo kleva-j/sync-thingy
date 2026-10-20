@@ -5,18 +5,19 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./local-schema": "./src/local-schema.ts",
+    "./client-migrations": "./src/client-migrations.ts",
+    "./client-schema": "./src/client-schema.ts",
     "./migrations": "./src/migrations.generated.ts",
     "./schema": "./src/schema.ts",
     "./server-schema": "./src/server-schema.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "migrations:build": "node scripts/build-migrations.mjs drizzle/local src/migrations.generated.ts localMigrations && oxfmt src/migrations.generated.ts",
-    "migrations:check:local": "vp test tests/local-migrations.test.ts",
+    "migrations:build": "node scripts/build-migrations.mjs drizzle/client src/migrations.generated.ts clientMigrations && oxfmt src/migrations.generated.ts",
+    "migrations:check:client": "vp test tests/client-migrations.test.ts",
     "migrations:check:server": "node scripts/check-server-migrations.mjs",
-    "migrations:generate": "pnpm run migrations:generate:local && pnpm run migrations:generate:server",
-    "migrations:generate:local": "drizzle-kit generate --config=drizzle.local.config.ts && pnpm run migrations:build && oxfmt drizzle/local/meta",
+    "migrations:generate": "pnpm run migrations:generate:client && pnpm run migrations:generate:server",
+    "migrations:generate:client": "drizzle-kit generate --config=drizzle.client.config.ts && pnpm run migrations:build && oxfmt drizzle/client/meta",
     "migrations:generate:server": "drizzle-kit generate --config=drizzle.server.config.ts && oxfmt drizzle/server/meta",
     "test": "vp test"
   },

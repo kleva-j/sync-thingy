@@ -1,4 +1,4 @@
-export const localMigrations = [
+export const clientMigrations = [
   {
     id: 0,
     name: "0000_chunky_gressill.sql",

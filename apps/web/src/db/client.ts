@@ -3,11 +3,12 @@ import type { PgliteDatabase } from "drizzle-orm/pglite";
 
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { electricSync } from "@electric-sql/pglite-sync";
-import * as schema from "@sync-disc/db/client-schema";
+import { Context, Effect, Layer } from "effect";
 import { drizzle } from "drizzle-orm/pglite";
-import { Context, Effect, Layer, ManagedRuntime } from "effect";
 
-import { clientDatabaseError } from "./errors";
+import * as schema from "@sync-disc/db/client-schema";
+
+import { clientDatabaseError } from "@/db/errors";
 
 import PGliteWorkerCtor from "./pglite.worker?worker";
 
@@ -56,8 +57,3 @@ const openClientDatabase = Effect.gen(function* () {
 });
 
 export const ClientDatabaseLive = Layer.effect(ClientDatabase, openClientDatabase);
-
-export const clientDatabaseRuntime = ManagedRuntime.make(ClientDatabaseLive);
-
-export const runClientDatabase = <A, E>(effect: Effect.Effect<A, E, ClientDatabase>): Promise<A> =>
-  clientDatabaseRuntime.runPromise(effect);

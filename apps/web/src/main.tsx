@@ -1,6 +1,7 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { createRoot } from "react-dom/client";
 
+import { registerServiceWorker } from "@/service-worker";
 import { BootGate } from "@/components/boot-gate";
 import { routeTree } from "@/routeTree.gen";
 
@@ -33,4 +34,5 @@ if (!rootElement.innerHTML) {
       <RouterProvider router={router} />
     </BootGate>,
   );
+  registerServiceWorker();
 }

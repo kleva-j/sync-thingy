@@ -130,6 +130,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.44
         version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      core:
+        specifier: workspace:*
+        version: link:../../packages/core
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(pg@8.23.1)

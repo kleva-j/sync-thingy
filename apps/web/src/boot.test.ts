@@ -5,7 +5,7 @@ import { type BootLockManager, startClientApp, withBootLock } from "./boot.ts";
 test("runs boot work under the cross-tab lock", async () => {
   let lockName = "";
   const locks: BootLockManager = {
-    request: (name, run) => {
+    request: (name, _options, run) => {
       lockName = name;
       return run();
     },
@@ -50,10 +50,11 @@ test("times out stuck boot work", async () => {
   });
 });
 
-test("releases the cross-tab lock when boot times out", async () => {
+test("keeps the cross-tab lock after boot times out", async () => {
   let released = false;
+  let finish!: () => void;
   const locks: BootLockManager = {
-    request: async (_name, run) => {
+    request: async (_name, _options, run) => {
       try {
         return await run();
       } finally {
@@ -63,11 +64,18 @@ test("releases the cross-tab lock when boot times out", async () => {
   };
 
   const result = await startClientApp(
-    () => new Promise<void>((resolve) => setTimeout(resolve, 50)),
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
     locks,
     10,
   );
 
   expect(result.status).toBe("error");
+  expect(released).toBe(false);
+
+  finish();
+  await new Promise((resolve) => setTimeout(resolve, 0));
   expect(released).toBe(true);
 });

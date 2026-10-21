@@ -24,3 +24,5 @@ export const bootClientApp = Effect.gen(function* () {
 export const runClientApp = <A, E>(
   effect: Effect.Effect<A, E, ClientDatabase | CurrentClient>,
 ): Promise<A> => clientAppRuntime.runPromise(effect);
+
+export const disposeClientApp = (): Promise<void> => clientAppRuntime.dispose();

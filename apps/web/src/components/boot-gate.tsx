@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@sync-disc/ui/components/button";
 import { useEffect, useState } from "react";
 
-import { startClientApp } from "@/boot";
+import { resetLocalData, startClientApp } from "@/boot";
 
 import Loader from "./loader";
 
@@ -12,6 +12,8 @@ type BootStatus = BootState | { readonly status: "loading" };
 
 export function BootGate({ children }: { readonly children: ReactNode }) {
   const [state, setState] = useState<BootStatus>({ status: "loading" });
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | undefined>();
 
   useEffect(() => {
     let mounted = true;
@@ -44,6 +46,22 @@ export function BootGate({ children }: { readonly children: ReactNode }) {
   }
 
   if (state.status === "error") {
+    const reset = () => {
+      if (!window.confirm("Delete the local workspace and start over?")) {
+        return;
+      }
+
+      setResetting(true);
+      setResetError(undefined);
+
+      resetLocalData()
+        .then(() => window.location.reload())
+        .catch((cause: unknown) => {
+          setResetting(false);
+          setResetError(cause instanceof Error ? cause.message : String(cause));
+        });
+    };
+
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-lg space-y-4 border border-border bg-background p-6">
@@ -51,9 +69,22 @@ export function BootGate({ children }: { readonly children: ReactNode }) {
           <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
             {state.message}
           </p>
-          <Button type="button" onClick={() => window.location.reload()}>
-            Reload
-          </Button>
+          {resetError ? (
+            <p className="whitespace-pre-wrap break-words text-sm text-destructive">{resetError}</p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={resetting}
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </Button>
+            <Button type="button" variant="destructive" disabled={resetting} onClick={reset}>
+              {resetting ? "Resetting..." : "Reset local data"}
+            </Button>
+          </div>
         </div>
       </main>
     );

@@ -30,14 +30,34 @@ export async function applyClientMigrations(
       `SELECT to_regclass('public.local_migrations') AS name`,
     );
 
-    let appliedIds = new Set<number>();
+    const appliedById = new Map<number, { id: number; name: string; hash: string }>();
     if (ledger.rows[0]?.name != null) {
-      const applied = await tx.query<{ id: number }>(`SELECT id FROM local_migrations`);
-      appliedIds = new Set(applied.rows.map((row) => row.id));
+      const applied = await tx.query<{ id: number; name: string; hash: string }>(
+        `SELECT id, name, hash FROM local_migrations`,
+      );
+      for (const row of applied.rows) {
+        appliedById.set(row.id, row);
+      }
     }
 
     for (const migration of migrations) {
-      if (appliedIds.has(migration.id)) {
+      const applied = appliedById.get(migration.id);
+
+      if (applied && applied.name !== migration.name) {
+        throw new Error(
+          `Migration name mismatch for ${migration.name}: applied ${applied.name}, shipped ${migration.name}`,
+        );
+      }
+
+      if (applied && applied.hash !== migration.hash) {
+        throw new Error(
+          `Migration hash mismatch for ${migration.name}: applied ${applied.hash}, shipped ${migration.hash}`,
+        );
+      }
+    }
+
+    for (const migration of migrations) {
+      if (appliedById.has(migration.id)) {
         continue;
       }
 

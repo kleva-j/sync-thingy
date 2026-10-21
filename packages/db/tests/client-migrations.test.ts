@@ -47,3 +47,33 @@ test("does not reapply migrations that are already recorded", async () => {
     await pg.close();
   }
 });
+
+test("blocks when an applied migration hash changes", async () => {
+  const pg = new PGlite();
+
+  try {
+    await applyClientMigrations(pg, clientMigrations);
+    await pg.query(`UPDATE local_migrations SET hash = 'tampered' WHERE id = 0`);
+
+    await expect(applyClientMigrations(pg, clientMigrations)).rejects.toThrow(
+      /migration hash mismatch.*0000_chunky_gressill/i,
+    );
+  } finally {
+    await pg.close();
+  }
+});
+
+test("blocks when an applied migration name changes", async () => {
+  const pg = new PGlite();
+
+  try {
+    await applyClientMigrations(pg, clientMigrations);
+    await pg.query(`UPDATE local_migrations SET name = 'renamed' WHERE id = 0`);
+
+    await expect(applyClientMigrations(pg, clientMigrations)).rejects.toThrow(
+      /migration name mismatch.*0000_chunky_gressill/i,
+    );
+  } finally {
+    await pg.close();
+  }
+});

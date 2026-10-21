@@ -71,8 +71,8 @@ export async function resetLocalData(): Promise<void> {
   const databases = await indexedDB.databases?.();
   const names = databases
     ? databases
-        .map((database) => database.name)
-        .filter((name): name is string => Boolean(name?.includes("sync-disc")))
+      .map((database) => database.name)
+      .filter((name): name is string => Boolean(name?.includes("sync-disc")))
     : ["/pglite/sync-disc", "sync-disc"];
 
   await Promise.all(names.map(deleteIndexedDatabase));

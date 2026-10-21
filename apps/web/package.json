@@ -8,6 +8,7 @@
     "serve": "vp preview",
     "start": "vp dev",
     "check-types": "vp build && tsc --noEmit",
+    "test": "vp test",
     "dev:bare": "vp dev",
     "env:generate": "varlock codegen"
   },
@@ -18,6 +19,7 @@
     "@sync-disc/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router": "^1.170.44",
+    "core": "workspace:*",
     "drizzle-orm": "0.45.4",
     "effect": "catalog:",
     "lucide-react": "^1.56.0",

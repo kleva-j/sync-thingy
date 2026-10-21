@@ -1,9 +1,17 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const migrationsDir = new URL("../drizzle/spike/", import.meta.url);
-const outputFile = new URL("../src/spike-migrations.generated.ts", import.meta.url);
+const [migrationsDirArg, outputFileArg, exportName] = process.argv.slice(2);
+
+if (!migrationsDirArg || !outputFileArg || !exportName) {
+  throw new Error("Usage: build-migrations.mjs <migrations-dir> <output-file> <export-name>");
+}
+
+const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+const migrationsDir = resolve(packageRoot, migrationsDirArg);
+const outputFile = resolve(packageRoot, outputFileArg);
 
 const files = (await readdir(migrationsDir))
   .filter((file) => file.endsWith(".sql"))
@@ -12,9 +20,9 @@ const files = (await readdir(migrationsDir))
 const migrations = [];
 
 for (const file of files) {
-  const sql = await readFile(new URL(file, migrationsDir), "utf8");
-  const id = file.split("_")[0];
-  if (!id) {
+  const sql = await readFile(resolve(migrationsDir, file), "utf8");
+  const id = Number.parseInt(file.split("_")[0] ?? "", 10);
+  if (!Number.isInteger(id)) {
     throw new Error(`Migration file is missing a numeric prefix: ${file}`);
   }
   migrations.push({
@@ -25,7 +33,7 @@ for (const file of files) {
   });
 }
 
-const output = `export const spikeMigrations = ${JSON.stringify(migrations, null, 2)} as const;\n`;
+const output = `export const ${exportName} = ${JSON.stringify(migrations, null, 2)} as const;\n`;
 await writeFile(outputFile, output);
 
-console.log(`Wrote ${migrations.length} migration(s) to ${fileURLToPath(outputFile)}`);
+console.log(`Wrote ${migrations.length} migration(s) to ${outputFile}`);

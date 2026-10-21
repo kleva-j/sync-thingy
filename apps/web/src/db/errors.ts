@@ -1,13 +1,13 @@
 import { Data } from "effect";
 
-export class LocalDatabaseError extends Data.TaggedError("LocalDatabaseError")<{
+export class ClientDatabaseError extends Data.TaggedError("ClientDatabaseError")<{
   readonly operation: string;
   readonly cause: unknown;
   readonly message: string;
 }> {}
 
-export const localDatabaseError = (operation: string, cause: unknown): LocalDatabaseError =>
-  new LocalDatabaseError({
+export const clientDatabaseError = (operation: string, cause: unknown): ClientDatabaseError =>
+  new ClientDatabaseError({
     operation,
     cause,
     message: cause instanceof Error ? cause.message : String(cause),

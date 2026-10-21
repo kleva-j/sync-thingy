@@ -5,5 +5,11 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["drizzle.spike.config.ts", "scripts/**/*.mjs", "src/**/*.ts"]
+  "include": [
+    "drizzle.client.config.ts",
+    "drizzle.server.config.ts",
+    "scripts/**/*.mjs",
+    "src/**/*.ts",
+    "tests/**/*.ts"
+  ]
 }

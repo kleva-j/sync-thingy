@@ -5,4 +5,6 @@ worker({
   async init(options) {
     return PGlite.create(options);
   },
+}).catch((cause: unknown) => {
+  console.error("Failed to initialize the PGlite worker", cause);
 });

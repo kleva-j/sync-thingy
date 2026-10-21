@@ -1,37 +1,35 @@
 import type { PGlite, PGliteInterfaceExtensions } from "@electric-sql/pglite";
 import type { PgliteDatabase } from "drizzle-orm/pglite";
 
-import { Context, Effect, Layer, ManagedRuntime } from "effect";
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { electricSync } from "@electric-sql/pglite-sync";
+import { Context, Effect, Layer } from "effect";
 import { drizzle } from "drizzle-orm/pglite";
-import { spikeItems } from "@sync-disc/db";
 
-import { localDatabaseError } from "./errors";
-import { runMigrations } from "./migrations";
+import * as schema from "@sync-disc/db/client-schema";
+
+import { clientDatabaseError } from "@/db/errors";
 
 import PGliteWorkerCtor from "./pglite.worker?worker";
 
-const DATA_DIR = "idb://sync-disc-spike";
-const schema = { spikeItems };
+const DATA_DIR = "idb://sync-disc";
 
-export type LocalSchema = typeof schema;
-export type SpikeItem = typeof spikeItems.$inferSelect;
+export type ClientSchema = typeof schema;
 
-export type LocalPg = PGliteWorker &
+export type ClientPg = PGliteWorker &
   PGliteInterfaceExtensions<{ electric: ReturnType<typeof electricSync> }>;
-  
-export type LocalDrizzle = PgliteDatabase<LocalSchema>;
 
-export class LocalDatabase extends Context.Service<
-  LocalDatabase,
+export type ClientDrizzle = PgliteDatabase<ClientSchema>;
+
+export class ClientDatabase extends Context.Service<
+  ClientDatabase,
   {
-    readonly pg: LocalPg;
-    readonly db: LocalDrizzle;
+    readonly pg: ClientPg;
+    readonly db: ClientDrizzle;
   }
->()("@sync-disc/web/LocalDatabase") { }
+>()("@sync-disc/web/ClientDatabase") {}
 
-const openLocalDatabase = Effect.gen(function* () {
+const openClientDatabase = Effect.gen(function* () {
   const worker = yield* Effect.acquireRelease(
     Effect.sync(() => new PGliteWorkerCtor({ name: "pglite" })),
     (worker) => Effect.sync(() => worker.terminate()),
@@ -45,24 +43,17 @@ const openLocalDatabase = Effect.gen(function* () {
           electric: electricSync(),
         },
       }),
-    catch: (cause) => localDatabaseError("open local database", cause),
+    catch: (cause) => clientDatabaseError("open client database", cause),
   });
 
   yield* Effect.tryPromise({
     try: () => pg.waitReady,
-    catch: (cause) => localDatabaseError("wait for local database", cause),
+    catch: (cause) => clientDatabaseError("wait for client database", cause),
   });
-
-  yield* runMigrations(pg);
 
   const db = drizzle(pg as unknown as PGlite, { schema });
 
   return { pg, db };
 });
 
-export const LocalDatabaseLive = Layer.effect(LocalDatabase, openLocalDatabase);
-
-export const localDatabaseRuntime = ManagedRuntime.make(LocalDatabaseLive);
-
-export const runLocalDatabase = <A, E>(effect: Effect.Effect<A, E, LocalDatabase>): Promise<A> =>
-  localDatabaseRuntime.runPromise(effect);
+export const ClientDatabaseLive = Layer.effect(ClientDatabase, openClientDatabase);

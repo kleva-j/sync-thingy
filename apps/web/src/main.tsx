@@ -1,8 +1,11 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
+
+import { registerServiceWorker } from "@/service-worker";
+import { BootGate } from "@/components/boot-gate";
+import { routeTree } from "@/routeTree.gen";
 
 import Loader from "./components/loader";
-import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({
   routeTree,
@@ -25,6 +28,11 @@ if (!rootElement) {
 }
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+  const root = createRoot(rootElement);
+  root.render(
+    <BootGate>
+      <RouterProvider router={router} />
+    </BootGate>,
+  );
+  registerServiceWorker();
 }

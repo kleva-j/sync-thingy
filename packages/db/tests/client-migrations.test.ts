@@ -77,3 +77,19 @@ test("blocks when an applied migration name changes", async () => {
     await pg.close();
   }
 });
+test("blocks when an applied migration is no longer shipped", async () => {
+  const pg = new PGlite();
+
+  try {
+    await applyClientMigrations(pg, clientMigrations);
+
+    await expect(
+      applyClientMigrations(
+        pg,
+        clientMigrations.filter((migration) => migration.id !== 0),
+      ),
+    ).rejects.toThrow(/is applied but not shipped/i);
+  } finally {
+    await pg.close();
+  }
+});

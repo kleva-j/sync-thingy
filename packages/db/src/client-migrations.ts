@@ -40,6 +40,14 @@ export async function applyClientMigrations(
       }
     }
 
+    const shippedIds = new Set(migrations.map((migration) => migration.id));
+
+    for (const applied of appliedById.values()) {
+      if (!shippedIds.has(applied.id)) {
+        throw new Error(`Migration ${applied.name} (${applied.id}) is applied but not shipped`);
+      }
+    }
+
     for (const migration of migrations) {
       const applied = appliedById.get(migration.id);
 

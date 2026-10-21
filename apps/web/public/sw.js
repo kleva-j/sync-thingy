@@ -51,12 +51,25 @@ const cacheFirst = async (request) => {
 const offlineShell = async () =>
   (await caches.match(SHELL_URL, { ignoreVary: true })) ?? Response.error();
 
+const isShellResponse = (response) => {
+  const url = new URL(response.url);
+  const contentType = response.headers.get("content-type") ?? "";
+
+  return (
+    url.origin === self.location.origin &&
+    url.pathname === SHELL_URL &&
+    contentType.includes("text/html")
+  );
+};
+
 const networkFirstNavigation = async (request) => {
   try {
     const response = await fetch(request);
 
     if (response.ok) {
-      await putInCache(SHELL_URL, response.clone());
+      if (isShellResponse(response)) {
+        await putInCache(SHELL_URL, response.clone());
+      }
       return response;
     }
 
@@ -79,7 +92,7 @@ const isStaticAsset = (request, url) => {
     return true;
   }
 
-  return ["font", "image", "style", "script", "worker", "manifest"].includes(request.destination);
+  return ["font", "style", "script", "worker", "manifest"].includes(request.destination);
 };
 
 self.addEventListener("fetch", (event) => {

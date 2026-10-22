@@ -11,7 +11,8 @@
     "./migrations": "./src/migrations.generated.ts",
     "./repositories": "./src/repositories/index.ts",
     "./schema": "./src/schema.ts",
-    "./server-schema": "./src/server-schema.ts"
+    "./server-schema": "./src/server-schema.ts",
+    "./testing": "./src/testing/pglite.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

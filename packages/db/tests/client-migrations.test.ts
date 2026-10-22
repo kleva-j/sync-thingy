@@ -1,12 +1,13 @@
 import { expect, test } from "vite-plus/test";
-import { PGlite } from "@electric-sql/pglite";
 import { newUuid7 } from "core";
+
+import { createTestDatabase } from "@sync-disc/db/testing";
 
 import { applyClientMigrations } from "../src/client-migrations.ts";
 import { clientMigrations } from "../src/migrations.generated.ts";
 
 test("applies every client migration to a fresh PGlite database", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("empty");
 
   try {
     await applyClientMigrations(pg, clientMigrations);
@@ -31,7 +32,7 @@ test("applies every client migration to a fresh PGlite database", async () => {
 });
 
 test("does not reapply migrations that are already recorded", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("migrated");
 
   try {
     await applyClientMigrations(pg, clientMigrations);
@@ -50,10 +51,9 @@ test("does not reapply migrations that are already recorded", async () => {
 });
 
 test("blocks when an applied migration hash changes", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("migrated");
 
   try {
-    await applyClientMigrations(pg, clientMigrations);
     await pg.query(`UPDATE local_migrations SET hash = 'tampered' WHERE id = 0`);
 
     await expect(applyClientMigrations(pg, clientMigrations)).rejects.toThrow(
@@ -65,10 +65,9 @@ test("blocks when an applied migration hash changes", async () => {
 });
 
 test("blocks when an applied migration name changes", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("migrated");
 
   try {
-    await applyClientMigrations(pg, clientMigrations);
     await pg.query(`UPDATE local_migrations SET name = 'renamed' WHERE id = 0`);
 
     await expect(applyClientMigrations(pg, clientMigrations)).rejects.toThrow(
@@ -79,11 +78,9 @@ test("blocks when an applied migration name changes", async () => {
   }
 });
 test("blocks when an applied migration is no longer shipped", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("migrated");
 
   try {
-    await applyClientMigrations(pg, clientMigrations);
-
     await expect(
       applyClientMigrations(
         pg,
@@ -96,14 +93,9 @@ test("blocks when an applied migration is no longer shipped", async () => {
 });
 
 test("adds and backfills outbox status on an existing database", async () => {
-  const pg = new PGlite();
+  const { pg } = await createTestDatabase("initial");
 
   try {
-    const [initial] = clientMigrations;
-    if (!initial) throw new Error("Expected an initial client migration");
-
-    await applyClientMigrations(pg, [initial]);
-
     const syncedOutboxId = newUuid7();
     const pendingOutboxId = newUuid7();
     const clientId = newUuid7();

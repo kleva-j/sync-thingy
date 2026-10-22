@@ -1,5 +1,5 @@
+import type { ClientDrizzle } from "@sync-disc/db/client-db";
 import type { ClientDatabaseError } from "@/db/errors";
-import type { ClientDrizzle } from "@/db/client";
 
 import { clients, localSettings } from "@sync-disc/db/client-schema";
 import { Context, Effect, Layer, Schema } from "effect";

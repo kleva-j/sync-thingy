@@ -1,5 +1,5 @@
 import type { PGlite, PGliteInterfaceExtensions } from "@electric-sql/pglite";
-import type { PgliteDatabase } from "drizzle-orm/pglite";
+import type { ClientDrizzle } from "@sync-disc/db/client-db";
 
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { electricSync } from "@electric-sql/pglite-sync";
@@ -14,12 +14,8 @@ import PGliteWorkerCtor from "./pglite.worker?worker";
 
 const DATA_DIR = "idb://sync-disc";
 
-export type ClientSchema = typeof schema;
-
 export type ClientPg = PGliteWorker &
   PGliteInterfaceExtensions<{ electric: ReturnType<typeof electricSync> }>;
-
-export type ClientDrizzle = PgliteDatabase<ClientSchema>;
 
 export class ClientDatabase extends Context.Service<
   ClientDatabase,

@@ -2,6 +2,7 @@ import { Effect, Layer, ManagedRuntime } from "effect";
 
 import { CurrentClient, CurrentClientLive } from "@/db/current-client";
 import { ClientDatabase, ClientDatabaseLive } from "@/db/client";
+import { Workspaces, WorkspacesLive } from "@/db/workspaces";
 import { runMigrations } from "@/db/migrations";
 
 export const bootstrapClientDatabase = Effect.gen(function* () {
@@ -13,7 +14,9 @@ export const ClientDatabaseBootLive = Layer.effectDiscard(bootstrapClientDatabas
   Layer.provideMerge(ClientDatabaseLive),
 );
 
-export const ClientAppLive = CurrentClientLive.pipe(Layer.provideMerge(ClientDatabaseBootLive));
+const currentClientApp = CurrentClientLive.pipe(Layer.provideMerge(ClientDatabaseBootLive));
+
+export const ClientAppLive = WorkspacesLive.pipe(Layer.provideMerge(currentClientApp));
 
 export const clientAppRuntime = ManagedRuntime.make(ClientAppLive);
 
@@ -22,7 +25,7 @@ export const bootClientApp = Effect.gen(function* () {
 });
 
 export const runClientApp = <A, E>(
-  effect: Effect.Effect<A, E, ClientDatabase | CurrentClient>,
+  effect: Effect.Effect<A, E, ClientDatabase | CurrentClient | Workspaces>,
 ): Promise<A> => clientAppRuntime.runPromise(effect);
 
 export const disposeClientApp = (): Promise<void> => clientAppRuntime.dispose();

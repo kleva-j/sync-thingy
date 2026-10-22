@@ -230,6 +230,9 @@ importers:
       '@electric-sql/pglite-sync':
         specifier: 0.6.11
         version: 0.6.11(@electric-sql/pglite@0.5.10)
+      core:
+        specifier: workspace:*
+        version: link:../core
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(pg@8.23.1)
@@ -243,6 +246,9 @@ importers:
       drizzle-kit:
         specifier: 0.31.11
         version: 0.31.11
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
       pg:
         specifier: ^8.23.1
         version: 8.23.1

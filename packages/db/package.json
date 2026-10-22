@@ -5,9 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./client-db": "./src/client-db.ts",
     "./client-migrations": "./src/client-migrations.ts",
     "./client-schema": "./src/client-schema.ts",
     "./migrations": "./src/migrations.generated.ts",
+    "./repositories": "./src/repositories/index.ts",
     "./schema": "./src/schema.ts",
     "./server-schema": "./src/server-schema.ts"
   },
@@ -24,12 +26,14 @@
   "dependencies": {
     "@electric-sql/pglite": "0.5.10",
     "@electric-sql/pglite-sync": "0.6.11",
+    "core": "workspace:*",
     "drizzle-orm": "0.45.4"
   },
   "devDependencies": {
     "@sync-disc/config": "workspace:*",
     "@types/node": "^26.6.5",
     "drizzle-kit": "0.31.11",
+    "effect": "catalog:",
     "pg": "^8.23.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

@@ -8,6 +8,20 @@
       "when": 1792500473466,
       "tag": "0000_chunky_gressill",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792598057470,
+      "tag": "0001_flashy_rictor",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792643962100,
+      "tag": "0002_backfill_outbox_status",
+      "breakpoints": true
     }
   ]
 }

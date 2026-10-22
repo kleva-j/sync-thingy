@@ -4,6 +4,7 @@ import { expect, test } from "vite-plus/test";
 import {
   ClientId,
   ClientNotFound,
+  ConflictError,
   SnapshotId,
   WorkspaceId,
   WorkspaceNotFound,
@@ -29,4 +30,8 @@ test("rejects non-UUIDv7 IDs", () => {
 test("domain errors expose a 404 HTTP status", () => {
   expect(ClientNotFound.ast.annotations?.httpApiStatus).toBe(404);
   expect(WorkspaceNotFound.ast.annotations?.httpApiStatus).toBe(404);
+});
+
+test("conflict errors expose a 409 HTTP status", () => {
+  expect(ConflictError.ast.annotations?.httpApiStatus).toBe(409);
 });

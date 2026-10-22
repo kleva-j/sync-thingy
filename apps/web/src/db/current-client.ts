@@ -4,15 +4,15 @@ import type { ClientDatabaseError } from "@/db/errors";
 import { clients, localSettings } from "@sync-disc/db/client-schema";
 import { Context, Effect, Layer, Schema } from "effect";
 import { ClientId, newUuid7 } from "core";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { clientDatabaseError } from "@/db/errors";
 import { ClientDatabase } from "@/db/client";
 
-export const CURRENT_CLIENT_SETTING_KEY = "current-client-id";
+export const SETTING_KEY = "current-client-id";
 
 const CurrentClientSetting = Schema.Struct({ clientId: ClientId });
-const decodeCurrentClientSetting = Schema.decodeUnknownSync(CurrentClientSetting);
+const decodeSetting = Schema.decodeUnknownSync(CurrentClientSetting);
 
 export const ensureCurrentClient = (
   db: ClientDrizzle,
@@ -20,39 +20,32 @@ export const ensureCurrentClient = (
   Effect.tryPromise({
     try: () =>
       db.transaction(async (tx) => {
-        const existing = await tx
+        const [existing] = await tx
           .select({ value: localSettings.value })
           .from(localSettings)
-          .where(eq(localSettings.key, CURRENT_CLIENT_SETTING_KEY));
+          .where(eq(localSettings.key, SETTING_KEY));
 
-        let clientId: ClientId;
-
-        if (existing[0]) {
-          clientId = decodeCurrentClientSetting(existing[0].value).clientId;
-        } else {
-          clientId = Schema.decodeSync(ClientId)(newUuid7());
-
-          const inserted = await tx
-            .insert(localSettings)
-            .values({
-              key: CURRENT_CLIENT_SETTING_KEY,
-              value: { clientId },
-            })
-            .onConflictDoNothing()
-            .returning({ key: localSettings.key });
-
-          if (inserted.length === 0) {
-            const winner = await tx
-              .select({ value: localSettings.value })
-              .from(localSettings)
-              .where(eq(localSettings.key, CURRENT_CLIENT_SETTING_KEY));
-
-            clientId = decodeCurrentClientSetting(winner[0]?.value).clientId;
-          }
+        if (existing) {
+          const { clientId } = decodeSetting(existing.value);
+          await tx.insert(clients).values({ id: clientId }).onConflictDoNothing();
+          return clientId;
         }
 
-        await tx.insert(clients).values({ id: clientId }).onConflictDoNothing();
+        const clientId = Schema.decodeSync(ClientId)(newUuid7());
 
+        const [inserted] = await tx
+          .insert(localSettings)
+          .values({ key: SETTING_KEY, value: { clientId } })
+          .onConflictDoUpdate({
+            target: localSettings.key,
+            set: { value: sql`${localSettings.value}` },
+          })
+          .returning({ value: localSettings.value });
+
+        if (!inserted) {
+          throw new Error("current client setting was not returned after insert");
+        }
+        await tx.insert(clients).values({ id: clientId }).onConflictDoNothing();
         return clientId;
       }),
     catch: (cause) => clientDatabaseError("ensure current client", cause),

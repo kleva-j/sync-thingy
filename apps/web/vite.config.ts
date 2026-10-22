@@ -41,6 +41,11 @@ const serviceWorkerPrecache = (): Plugin => {
 };
 
 export default defineConfig({
+  test: {
+    pool: "forks",
+    fileParallelism: true,
+    globalSetup: ["./src/test/global-setup.ts"],
+  },
   server: {
     port: 3001,
     proxy: {

@@ -18,3 +18,16 @@ export class WorkspaceNotFound extends Schema.TaggedError<
   WorkspaceNotFound,
   { readonly brand: unique symbol }
 >()("WorkspaceNotFound", { id: WorkspaceId }, { httpApiStatus: 404 }) {}
+
+export class ConflictError extends Schema.TaggedError<
+  ConflictError,
+  { readonly brand: unique symbol }
+>()(
+  "ConflictError",
+  {
+    workspaceId: WorkspaceId,
+    expectedVersion: Schema.Int,
+    actualVersion: Schema.Int,
+  },
+  { httpApiStatus: 409 },
+) {}

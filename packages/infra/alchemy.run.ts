@@ -11,6 +11,7 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const webWorker = yield* Cloudflare.Website.Vite("web", {
+      name: "sync-thing",
       rootDir: "../../apps/web",
       assets: {
         htmlHandling: "auto-trailing-slash",

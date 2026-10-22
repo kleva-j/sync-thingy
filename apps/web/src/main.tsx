@@ -1,8 +1,10 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 
 import { registerServiceWorker } from "@/service-worker";
 import { BootGate } from "@/components/boot-gate";
+import { queryClient } from "@/query/client";
 import { routeTree } from "@/routeTree.gen";
 
 import Loader from "./components/loader";
@@ -30,9 +32,11 @@ if (!rootElement) {
 if (!rootElement.innerHTML) {
   const root = createRoot(rootElement);
   root.render(
-    <BootGate>
-      <RouterProvider router={router} />
-    </BootGate>,
+    <QueryClientProvider client={queryClient}>
+      <BootGate>
+        <RouterProvider router={router} />
+      </BootGate>
+    </QueryClientProvider>,
   );
   registerServiceWorker();
 }

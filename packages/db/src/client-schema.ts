@@ -2,6 +2,9 @@ import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-o
 
 export * from "./schema.ts";
 
+export const outboxStatuses = ["pending", "synced", "failed", "discarded"] as const;
+export type OutboxStatus = (typeof outboxStatuses)[number];
+
 export const outbox = pgTable(
   "outbox",
   {
@@ -11,6 +14,7 @@ export const outbox = pgTable(
     entity: text("entity").notNull(),
     entityId: uuid("entity_id").notNull(),
     operation: text("operation").$type<"upsert" | "delete">().notNull(),
+    status: text("status").$type<OutboxStatus>().notNull().default("pending"),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
     baseVersion: integer("base_version"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -27,6 +31,7 @@ export const outbox = pgTable(
       table.createdAt,
     ),
     index("outbox_synced_at_created_at_idx").on(table.syncedAt, table.createdAt),
+    index("outbox_status_created_at_idx").on(table.status, table.createdAt),
   ],
 );
 

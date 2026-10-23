@@ -8,6 +8,20 @@
       "when": 1792500474662,
       "tag": "0000_bumpy_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792693888293,
+      "tag": "0001_faithful_may_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792705293821,
+      "tag": "0002_processed_change_fingerprint",
+      "breakpoints": true
     }
   ]
 }

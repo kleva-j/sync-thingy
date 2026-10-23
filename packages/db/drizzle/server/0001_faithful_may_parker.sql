@@ -1,0 +1,2 @@
+ALTER TABLE "processed_changes" ADD COLUMN "version" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "processed_changes" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;

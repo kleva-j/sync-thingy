@@ -10,4 +10,5 @@ export const processedChanges = pgTable("processed_changes", {
   processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
   version: integer("version").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  fingerprint: text("fingerprint").notNull(),
 });

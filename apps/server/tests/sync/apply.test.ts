@@ -59,6 +59,7 @@ test("creates a workspace and records the applied change", async () => {
   const processed = await testDb.db.select().from(processedChanges);
   expect(processed).toHaveLength(1);
   expect(processed[0]?.changeId).toBe(change.changeId);
+  expect(processed[0]?.fingerprint).toMatch(/^[0-9a-f]{64}$/);
 });
 
 test("returns the stored outcome for the same change id and does not bump version", async () => {
@@ -83,6 +84,36 @@ test("returns the stored outcome for the same change id and does not bump versio
 
   const processed = await testDb.db.select().from(processedChanges);
   expect(processed).toHaveLength(1);
+});
+
+test("treats a retry with reordered properties as the same change", async () => {
+  const change = makeUpsertChange();
+  if (change.operation !== "upsert") {
+    throw new Error("Expected an upsert change");
+  }
+
+  await applyChange(testDb.db, change, NOW);
+
+  const reorderedChange = {
+    payload: {
+      workspace: {
+        lastModifiedByClientId: change.payload.workspace.lastModifiedByClientId,
+        ownerClientId: change.payload.workspace.ownerClientId,
+        snapshotId: change.payload.workspace.snapshotId,
+        workspaceId: change.payload.workspace.workspaceId,
+      },
+    },
+    baseVersion: change.baseVersion,
+    operation: change.operation,
+    entityId: change.entityId,
+    entity: change.entity,
+    clientId: change.clientId,
+    changeId: change.changeId,
+  };
+
+  const result = await applyChange(testDb.db, reorderedChange, LATER);
+
+  expect(result).toMatchObject({ status: "duplicate", version: 1 });
 });
 
 test("returns the original outcome when a duplicate is retried after later writes", async () => {
@@ -325,6 +356,14 @@ test("rejects a reused change id when the fingerprint differs", async () => {
   const change = makeUpsertChange();
   await applyChange(testDb.db, change, NOW);
 
+  const changedBaseVersion = makeUpsertChange({
+    changeId: change.changeId,
+    baseVersion: 1,
+  });
+  const changedPayload = makeUpsertChange({
+    changeId: change.changeId,
+    snapshotId: snapshotB,
+  });
   const otherWorkspaceId = Schema.decodeSync(WorkspaceId)(newUuid7());
   const wrongEntity = makeUpsertChange({
     changeId: change.changeId,
@@ -342,7 +381,13 @@ test("rejects a reused change id when the fingerprint differs", async () => {
     baseVersion: 1,
   });
 
-  for (const candidate of [wrongEntity, wrongClient, wrongOperation]) {
+  for (const candidate of [
+    changedBaseVersion,
+    changedPayload,
+    wrongEntity,
+    wrongClient,
+    wrongOperation,
+  ]) {
     const result = await applyChange(testDb.db, candidate, LATER);
     expect(result).toMatchObject({
       status: "rejected",

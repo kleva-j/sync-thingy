@@ -40,6 +40,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "fingerprint": {
+          "name": "fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},

@@ -1,14 +1,16 @@
-import { ConflictError } from "core";
-import { and, eq, isNull } from "drizzle-orm";
+import type { ServerDatabase } from "@sync-disc/db/postgres";
 import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
+
+import { and, eq, isNull } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { ConflictError } from "core";
 import { DateTime } from "effect";
 
-import type { ServerDatabase } from "@sync-disc/db/postgres";
 import type {
-  SyncChange,
-  SyncChangeResult,
-  WorkspaceDeleteChange,
   WorkspaceUpsertChange,
+  WorkspaceDeleteChange,
+  SyncChangeResult,
+  SyncChange,
 } from "sync-engine";
 
 import { clients, processedChanges, workspaces } from "../db/schema.ts";
@@ -61,6 +63,38 @@ const applied = (change: SyncChange, row: typeof workspaces.$inferSelect): SyncC
 });
 
 type WorkspaceRow = typeof workspaces.$inferSelect;
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
+
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
+
+    return `{${entries
+      .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`)
+      .join(",")}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+
+  if (serialized === undefined) {
+    throw new TypeError("Change contains a value that cannot be serialized");
+  }
+
+  return serialized;
+}
+
+function fingerprintChange(change: SyncChange): string {
+  const fingerprintableChange = Object.fromEntries(
+    Object.entries(change).filter(([key]) => key !== "changeId"),
+  );
+
+  return createHash("sha256").update(canonicalJson(fingerprintableChange)).digest("hex");
+}
 
 function stateRejection(change: SyncChange, row: WorkspaceRow): SyncChangeResult | undefined {
   if (row.deletedAt !== null) {
@@ -231,6 +265,8 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
   change: SyncChange,
   now: Date,
 ): Promise<SyncChangeResult> {
+  const fingerprint = fingerprintChange(change);
+
   try {
     return await db.transaction(async (tx) => {
       const [processed] = await tx
@@ -243,6 +279,7 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
           processedAt: now,
           version: 0,
           updatedAt: now,
+          fingerprint,
         })
         .onConflictDoNothing()
         .returning({ changeId: processedChanges.changeId });
@@ -258,11 +295,7 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
           throw new Error("Processed change conflict but no row was found");
         }
 
-        if (
-          existing.clientId !== change.clientId ||
-          existing.entityId !== change.entityId ||
-          existing.operation !== change.operation
-        ) {
+        if (existing.fingerprint !== fingerprint) {
           return rejected(
             change,
             "invalid_payload",

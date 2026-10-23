@@ -28,6 +28,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "sonner": "catalog:",
+    "sync-engine": "workspace:*",
     "varlock": "catalog:",
     "zod": "catalog:"
   },

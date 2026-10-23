@@ -25,20 +25,25 @@
   },
   "scripts": {
     "build": "vp pack",
-    "dev": "vp pack --watch",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "test": "vp test",
     "check": "vp check",
     "check-types": "tsc --noEmit",
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@sync-disc/config": "workspace:*",
     "@sync-disc/db": "workspace:*",
     "core": "workspace:*",
+    "drizzle-orm": "0.45.4",
     "effect": "catalog:",
-    "sync-engine": "workspace:*"
+    "sync-engine": "workspace:*",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
     "@types/node": "^26.6.5",
     "bumpp": "^12.3.0",
     "typescript": "catalog:",

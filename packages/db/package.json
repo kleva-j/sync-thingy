@@ -9,6 +9,7 @@
     "./client-migrations": "./src/client-migrations.ts",
     "./client-schema": "./src/client-schema.ts",
     "./migrations": "./src/migrations.generated.ts",
+    "./postgres": "./src/postgres.ts",
     "./repositories": "./src/repositories/index.ts",
     "./schema": "./src/schema.ts",
     "./server-schema": "./src/server-schema.ts",
@@ -16,6 +17,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
+    "migrations:apply:server": "drizzle-kit migrate --config=drizzle.server.config.ts",
     "migrations:build": "node scripts/build-migrations.mjs drizzle/client src/migrations.generated.ts clientMigrations && oxfmt src/migrations.generated.ts",
     "migrations:check:client": "vp test tests/client-migrations.test.ts",
     "migrations:check:server": "node scripts/check-server-migrations.mjs",
@@ -28,14 +30,15 @@
     "@electric-sql/pglite": "0.5.10",
     "@electric-sql/pglite-sync": "0.6.11",
     "core": "workspace:*",
-    "drizzle-orm": "0.45.4"
+    "drizzle-orm": "0.45.4",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@sync-disc/config": "workspace:*",
     "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
     "drizzle-kit": "0.31.11",
     "effect": "catalog:",
-    "pg": "^8.23.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

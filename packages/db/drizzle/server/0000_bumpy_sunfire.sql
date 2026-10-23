@@ -1,7 +1,8 @@
 CREATE TABLE "processed_changes" (
 	"change_id" uuid PRIMARY KEY NOT NULL,
 	"client_id" uuid NOT NULL,
-	"processed_at" timestamp with time zone DEFAULT now() NOT NULL
+	"processed_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"fingerprint" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "clients" (

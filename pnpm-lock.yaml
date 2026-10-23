@@ -81,6 +81,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.5(effect@4.0.5)(redis@6.3.0)
       '@sync-disc/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -90,13 +93,22 @@ importers:
       core:
         specifier: workspace:*
         version: link:../../packages/core
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(@types/pg@8.23.1)(pg@8.23.1)
       effect:
         specifier: 'catalog:'
         version: 4.0.5
       sync-engine:
         specifier: workspace:*
         version: link:../../packages/sync-engine
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: 0.5.10
+        version: 0.5.10
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
@@ -138,7 +150,7 @@ importers:
         version: link:../../packages/core
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(pg@8.23.1)
+        version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(@types/pg@8.23.1)(pg@8.23.1)
       effect:
         specifier: 'catalog:'
         version: 4.0.5
@@ -157,6 +169,9 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      sync-engine:
+        specifier: workspace:*
+        version: link:../../packages/sync-engine
       varlock:
         specifier: 'catalog:'
         version: 1.18.0
@@ -238,7 +253,10 @@ importers:
         version: link:../core
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(pg@8.23.1)
+        version: 0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(@types/pg@8.23.1)(pg@8.23.1)
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
     devDependencies:
       '@sync-disc/config':
         specifier: workspace:*
@@ -246,15 +264,15 @@ importers:
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       drizzle-kit:
         specifier: 0.31.11
         version: 0.31.11
       effect:
         specifier: 'catalog:'
         version: 4.0.5
-      pg:
-        specifier: ^8.23.1
-        version: 8.23.1
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -291,6 +309,13 @@ importers:
         version: 1.18.0
 
   packages/sync-engine:
+    dependencies:
+      core:
+        specifier: workspace:*
+        version: link:../core
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.5
     devDependencies:
       '@types/node':
         specifier: ^26.6.5
@@ -2567,6 +2592,9 @@ packages:
 
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
+
+  '@types/pg@8.23.1':
+    resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
   '@types/react-dom@19.3.0':
     resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
@@ -6792,6 +6820,12 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/pg@8.23.1':
+    dependencies:
+      '@types/node': 26.6.5
+      pg-protocol: 1.16.1
+      pg-types: 2.2.0
+
   '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:
       '@types/react': 19.3.0
@@ -7401,11 +7435,12 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(pg@8.23.1):
+  drizzle-orm@0.45.4(@cloudflare/workers-types@5.20261018.1)(@electric-sql/pglite@0.5.10)(@libsql/client@0.17.4)(@types/pg@8.23.1)(pg@8.23.1):
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261018.1
       '@electric-sql/pglite': 0.5.10
       '@libsql/client': 0.17.4
+      '@types/pg': 8.23.1
       pg: 8.23.1
 
   dunder-proto@1.0.1:

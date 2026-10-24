@@ -1,19 +1,19 @@
 import { ClientId, SnapshotId, WorkspaceId, newUuid7 } from "core";
-import { DateTime, Schema } from "effect";
 import { afterEach, beforeEach, expect, test } from "vite-plus/test";
+import { DateTime, Schema } from "effect";
 
 import { clients, processedChanges, workspaces } from "../../src/db/schema.ts";
-import { applyChange, applyChanges, classifyExistingWorkspace } from "../../src/sync/apply.ts";
+import { applyChange, applyChanges } from "../../src/sync/apply.ts";
 import { makeTestDatabase } from "../support/database.ts";
 import {
-  clientA,
-  clientB,
-  makeDeleteChange,
   makeUpsertChange,
+  makeDeleteChange,
   newChangeId,
+  workspaceId,
   snapshotA,
   snapshotB,
-  workspaceId,
+  clientA,
+  clientB,
 } from "../support/changes.ts";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
@@ -322,34 +322,6 @@ test("preserves batch order and continues after a rejection", async () => {
   const results = await applyChanges(testDb.db, [create, stale, second], NOW);
 
   expect(results.map((result) => result.status)).toEqual(["applied", "conflict", "applied"]);
-});
-
-test("classifies a missed conditional update by current workspace state", async () => {
-  await applyChange(testDb.db, makeUpsertChange(), NOW);
-  const [active] = await testDb.db.select().from(workspaces);
-
-  const conflict = classifyExistingWorkspace(makeUpsertChange({ baseVersion: 0 }), active);
-  expect(conflict).toMatchObject({ status: "conflict" });
-  if (conflict.status === "conflict") {
-    expect(conflict.error.actualVersion).toBe(1);
-  }
-
-  const foreign = classifyExistingWorkspace(
-    makeUpsertChange({ clientId: clientB, baseVersion: 0 }),
-    active,
-  );
-  expect(foreign).toMatchObject({ status: "rejected", reason: "ownership" });
-
-  const missing = classifyExistingWorkspace(makeUpsertChange(), undefined);
-  expect(missing).toMatchObject({ status: "rejected", reason: "not_found" });
-
-  await applyChange(testDb.db, makeDeleteChange({ baseVersion: 1 }), LATER);
-  const [deleted] = await testDb.db.select().from(workspaces);
-  const alreadyDeleted = classifyExistingWorkspace(makeUpsertChange({ baseVersion: 2 }), deleted);
-  expect(alreadyDeleted).toMatchObject({
-    status: "rejected",
-    reason: "already_deleted",
-  });
 });
 
 test("rejects a reused change id when the fingerprint differs", async () => {

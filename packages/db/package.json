@@ -9,11 +9,13 @@
     "./client-migrations": "./src/client-migrations.ts",
     "./client-schema": "./src/client-schema.ts",
     "./migrations": "./src/migrations.generated.ts",
+    "./migrations-path": "./src/migrations-path.ts",
     "./postgres": "./src/postgres.ts",
     "./repositories": "./src/repositories/index.ts",
     "./schema": "./src/schema.ts",
     "./server-schema": "./src/server-schema.ts",
-    "./testing": "./src/testing/pglite.ts"
+    "./testing": "./src/testing/pglite.ts",
+    "./testing/postgres": "./src/testing/postgres.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, isAbsolute, join } from "node:path";
 import { expect, test } from "vite-plus/test";
 
 import { makePostgresDatabase, serverMigrationsPath } from "../src/postgres.ts";
@@ -17,6 +17,7 @@ test("creates a node-postgres database and pool without connecting", async () =>
 });
 
 test("exposes the server migrations folder", () => {
+  expect(isAbsolute(serverMigrationsPath)).toBe(true);
   expect(basename(serverMigrationsPath)).toBe("server");
   expect(existsSync(join(serverMigrationsPath, "meta/_journal.json"))).toBe(true);
 });

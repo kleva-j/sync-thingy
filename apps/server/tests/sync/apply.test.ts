@@ -3,7 +3,10 @@ import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 import { DateTime, Schema } from "effect";
 
 import { clients, processedChanges, workspaces } from "../../src/db/schema.ts";
-import { applyChange, applyChanges } from "../../src/sync/apply.ts";
+import {
+  applyChange as applyChangeForUser,
+  applyChanges as applyChangesForUser,
+} from "../../src/sync/apply.ts";
 import { makeTestDatabase } from "../support/database.ts";
 import {
   makeUpsertChange,
@@ -14,12 +17,32 @@ import {
   snapshotB,
   clientA,
   clientB,
+  userA,
+  userB,
 } from "../support/changes.ts";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
 const LATER = new Date("2026-01-01T00:01:00.000Z");
 
 let testDb: Awaited<ReturnType<typeof makeTestDatabase>>;
+
+const applyChange = (
+  db: typeof testDb.db,
+  change: Parameters<typeof applyChangeForUser>[2],
+  now: Date,
+) => applyChangeForUser(db, userA, change, now);
+
+const applyChanges = (
+  db: typeof testDb.db,
+  changes: Parameters<typeof applyChangesForUser>[2],
+  now: Date,
+) => applyChangesForUser(db, userA, changes, now);
+const applyAsUser = (
+  userId: typeof userA,
+  db: typeof testDb.db,
+  change: Parameters<typeof applyChangeForUser>[2],
+  now: Date,
+) => applyChangeForUser(db, userId, change, now);
 
 beforeEach(async () => {
   testDb = await makeTestDatabase();
@@ -49,6 +72,7 @@ test("creates a workspace and records the applied change", async () => {
     workspaceId,
     snapshotId: snapshotA,
     ownerClientId: clientA,
+    ownerUserId: userA,
     lastModifiedByClientId: clientA,
     version: 1,
     createdAt: NOW,
@@ -120,7 +144,11 @@ test("returns the original outcome when a duplicate is retried after later write
   const change = makeUpsertChange();
   await applyChange(testDb.db, change, NOW);
 
-  await applyChange(testDb.db, makeUpsertChange({ baseVersion: 1, snapshotId: snapshotB }), LATER);
+  await applyChange(
+    testDb.db,
+    makeUpsertChange({ baseVersion: 1, snapshotId: snapshotB }),
+    LATER,
+  );
 
   const result = await applyChange(testDb.db, change, LATER);
 
@@ -132,6 +160,15 @@ test("returns the original outcome when a duplicate is retried after later write
   const [row] = await testDb.db.select().from(workspaces);
   expect(row?.version).toBe(2);
   expect(row?.updatedAt).toEqual(LATER);
+});
+
+test("does not reveal a processed change to a different user", async () => {
+  const change = makeUpsertChange();
+  await applyChange(testDb.db, change, NOW);
+
+  const retry = await applyAsUser(userB, testDb.db, change, LATER);
+
+  expect(retry).toMatchObject({ status: "rejected", reason: "ownership" });
 });
 
 test("rejects a second create without leaving a processed or client row", async () => {
@@ -206,33 +243,59 @@ test("returns conflict for a stale base version and records nothing", async () =
   expect(retry.status).toBe("conflict");
 });
 
-test("rejects ownership and registers no processed row", async () => {
+test("allows the same user to update from a different client", async () => {
   await applyChange(testDb.db, makeUpsertChange(), NOW);
-  const rejectedId = newChangeId();
 
   const result = await applyChange(
     testDb.db,
     makeUpsertChange({
-      changeId: rejectedId,
       clientId: clientB,
       baseVersion: 1,
     }),
     LATER,
   );
 
-  expect(result).toMatchObject({
-    status: "rejected",
-    reason: "ownership",
-  });
+  expect(result).toMatchObject({ status: "applied", version: 2 });
 
   const [row] = await testDb.db.select().from(workspaces);
-  expect(row?.version).toBe(1);
+  expect(row).toMatchObject({
+    version: 2,
+    ownerUserId: userA,
+    lastModifiedByClientId: clientB,
+  });
 
   const processed = await testDb.db.select().from(processedChanges);
-  expect(processed).toHaveLength(1);
+  expect(processed).toHaveLength(2);
 
   const clientRows = await testDb.db.select().from(clients);
-  expect(clientRows.map((row) => row.id)).toEqual([clientA]);
+  expect(clientRows.map((row) => row.id)).toEqual([clientA, clientB]);
+});
+
+test("rejects another user and does not record the attempted write", async () => {
+  await applyChange(testDb.db, makeUpsertChange(), NOW);
+
+  const result = await applyAsUser(
+    userB,
+    testDb.db,
+    makeUpsertChange({ clientId: clientB, baseVersion: 1 }),
+    LATER,
+  );
+
+  expect(result).toMatchObject({ status: "rejected", reason: "ownership" });
+  expect(await testDb.db.select().from(processedChanges)).toHaveLength(1);
+});
+
+test("rejects legacy workspaces with no user owner", async () => {
+  await applyChange(testDb.db, makeUpsertChange(), NOW);
+  await testDb.db.update(workspaces).set({ ownerUserId: null });
+
+  const result = await applyChange(
+    testDb.db,
+    makeUpsertChange({ baseVersion: 1 }),
+    LATER,
+  );
+
+  expect(result).toMatchObject({ status: "rejected", reason: "ownership" });
 });
 
 test("rejects invalid payloads and foreign or missing deletes", async () => {
@@ -250,7 +313,12 @@ test("rejects invalid payloads and foreign or missing deletes", async () => {
 
   await applyChange(testDb.db, makeUpsertChange(), NOW);
 
-  const foreign = await applyChange(testDb.db, makeDeleteChange({ clientId: clientB }), LATER);
+  const foreign = await applyAsUser(
+    userB,
+    testDb.db,
+    makeDeleteChange({ clientId: clientB }),
+    LATER,
+  );
   expect(foreign).toMatchObject({
     status: "rejected",
     reason: "ownership",
@@ -276,7 +344,11 @@ test("rejects invalid payloads and foreign or missing deletes", async () => {
 test("returns conflict for a stale delete", async () => {
   await applyChange(testDb.db, makeUpsertChange(), NOW);
 
-  const result = await applyChange(testDb.db, makeDeleteChange({ baseVersion: 0 }), LATER);
+  const result = await applyChange(
+    testDb.db,
+    makeDeleteChange({ baseVersion: 0 }),
+    LATER,
+  );
 
   expect(result.status).toBe("conflict");
   if (result.status === "conflict") {
@@ -290,7 +362,11 @@ test("returns conflict for a stale delete", async () => {
 test("soft deletes and rejects later updates", async () => {
   await applyChange(testDb.db, makeUpsertChange(), NOW);
 
-  const deleted = await applyChange(testDb.db, makeDeleteChange({ baseVersion: 1 }), LATER);
+  const deleted = await applyChange(
+    testDb.db,
+    makeDeleteChange({ baseVersion: 1 }),
+    LATER,
+  );
   expect(deleted).toMatchObject({ status: "applied", version: 2 });
 
   const [row] = await testDb.db.select().from(workspaces);
@@ -321,7 +397,11 @@ test("preserves batch order and continues after a rejection", async () => {
 
   const results = await applyChanges(testDb.db, [create, stale, second], NOW);
 
-  expect(results.map((result) => result.status)).toEqual(["applied", "conflict", "applied"]);
+  expect(results.map((result) => result.status)).toEqual([
+    "applied",
+    "conflict",
+    "applied",
+  ]);
 });
 
 test("rejects a reused change id when the fingerprint differs", async () => {

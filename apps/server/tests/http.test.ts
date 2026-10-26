@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 import { DateTime, Layer } from "effect";
 
-import { makeDevAuthClient } from "sync-engine";
-
 import { makeDeleteChange, makeUpsertChange, workspaceId } from "./support/changes.ts";
 import { makeSyncStore, SyncStore } from "../src/sync/store.ts";
 import { makeTestDatabase } from "./support/database.ts";
-import { NOW, TOKEN, runWithClient } from "./support/http.ts";
+import { NOW, makeSessionClient, runWithClient } from "./support/http.ts";
 
 let testDb: Awaited<ReturnType<typeof makeTestDatabase>>;
 
@@ -26,7 +24,7 @@ const testStore = () =>
 
 test("applies a workspace upsert through the API", async () => {
   const change = makeUpsertChange();
-  const response = await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  const response = await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({ payload: { changes: [change] } }),
   );
 
@@ -39,12 +37,12 @@ test("applies a workspace upsert through the API", async () => {
 
 test("returns duplicate on a repeated change", async () => {
   const change = makeUpsertChange();
-  const response = await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  const response = await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({ payload: { changes: [change] } }),
   );
   expect(response.results[0]?.status).toBe("applied");
 
-  const retry = await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  const retry = await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({ payload: { changes: [change] } }),
   );
   const duplicate = retry.results[0];
@@ -55,11 +53,11 @@ test("returns duplicate on a repeated change", async () => {
 });
 
 test("returns a conflict result for a stale update", async () => {
-  await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({ payload: { changes: [makeUpsertChange()] } }),
   );
 
-  const response = await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  const response = await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({
       payload: {
         changes: [makeUpsertChange({ baseVersion: 0 })],
@@ -75,11 +73,11 @@ test("returns a conflict result for a stale update", async () => {
 });
 
 test("applies a soft delete through the API", async () => {
-  await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({ payload: { changes: [makeUpsertChange()] } }),
   );
 
-  const response = await runWithClient(testStore(), makeDevAuthClient(TOKEN), (client) =>
+  const response = await runWithClient(testStore(), makeSessionClient(), (client) =>
     client.sync.syncChanges({
       payload: {
         changes: [makeDeleteChange({ baseVersion: 1 })],

@@ -1,4 +1,4 @@
-import { ClientId, SnapshotId, WorkspaceId, newUuid7 } from "core";
+import { ClientId, SnapshotId, UserId, WorkspaceId, newUuid7 } from "core";
 import { afterAll, beforeAll, beforeEach, expect, test } from "vite-plus/test";
 import { eq } from "drizzle-orm";
 import { Schema } from "effect";
@@ -31,6 +31,7 @@ afterAll(async () => {
 
 const createIds = () => ({
   clientId: Schema.decodeSync(ClientId)(newUuid7()),
+  userId: Schema.decodeSync(UserId)("00000000-0000-4000-8000-000000000001"),
   workspaceId: Schema.decodeSync(WorkspaceId)(newUuid7()),
   snapshotId: Schema.decodeSync(SnapshotId)(newUuid7()),
   outboxId: newUuid7(),
@@ -50,6 +51,7 @@ test("creates a workspace and one pending upsert outbox row", async () => {
   expect(outboxRows[0]).toMatchObject({
     id: ids.outboxId,
     clientId: ids.clientId,
+    userId: ids.userId,
     entity: "workspace",
     entityId: ids.workspaceId,
     operation: "upsert",
@@ -72,6 +74,7 @@ test("rotates the snapshot without bumping the local version", async () => {
   });
   const rotated = await rotateWorkspaceSnapshotWithOutbox(db, {
     clientId: ids.clientId,
+    userId: ids.userId,
     workspaceId: ids.workspaceId,
     snapshotId: nextSnapshotId,
     outboxId: nextOutboxId,
@@ -102,6 +105,7 @@ test("soft-deletes the workspace and writes one delete outbox row", async () => 
   });
   const deleted = await deleteWorkspaceWithOutbox(db, {
     clientId: ids.clientId,
+    userId: ids.userId,
     workspaceId: ids.workspaceId,
     outboxId: deleteOutboxId,
     now: new Date("2026-10-21T12:02:00.000Z"),
@@ -155,6 +159,7 @@ test("returns undefined and writes no outbox row for a missing workspace", async
   await expect(
     rotateWorkspaceSnapshotWithOutbox(db, {
       clientId: ids.clientId,
+      userId: ids.userId,
       workspaceId: missingId,
       snapshotId: ids.snapshotId,
       outboxId: newUuid7(),
@@ -164,6 +169,7 @@ test("returns undefined and writes no outbox row for a missing workspace", async
   await expect(
     deleteWorkspaceWithOutbox(db, {
       clientId: ids.clientId,
+      userId: ids.userId,
       workspaceId: missingId,
       outboxId: newUuid7(),
       now: new Date(),

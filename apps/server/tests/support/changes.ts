@@ -1,9 +1,11 @@
-import { ClientId, SnapshotId, WorkspaceId, newUuid7 } from "core";
+import { ClientId, SnapshotId, UserId, WorkspaceId, newUuid7 } from "core";
 import { Schema } from "effect";
 import { ChangeId, type SyncChange } from "sync-engine";
 
 export const clientA = Schema.decodeSync(ClientId)(newUuid7());
 export const clientB = Schema.decodeSync(ClientId)(newUuid7());
+export const userA = Schema.decodeSync(UserId)("00000000-0000-4000-8000-000000000001");
+export const userB = Schema.decodeSync(UserId)("00000000-0000-4000-8000-000000000002");
 export const workspaceId = Schema.decodeSync(WorkspaceId)(newUuid7());
 export const snapshotA = Schema.decodeSync(SnapshotId)(newUuid7());
 export const snapshotB = Schema.decodeSync(SnapshotId)(newUuid7());

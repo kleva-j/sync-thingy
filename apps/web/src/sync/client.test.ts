@@ -9,7 +9,6 @@ test("constructs the typed sync client without a server", async () => {
       Effect.provide(
         makeSyncClientLayer({
           baseUrl: "http://localhost:3000",
-          token: "test-token",
         }),
       ),
     ),

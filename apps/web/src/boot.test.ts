@@ -1,6 +1,12 @@
 import { expect, test } from "vite-plus/test";
+import { UserId } from "core";
+import { Schema } from "effect";
 
 import { type BootLockManager, startClientApp, withBootLock } from "./boot.ts";
+
+const userId = Schema.decodeSync(UserId)(
+  "00000000-0000-4000-8000-000000000001",
+);
 
 test("runs boot work under the cross-tab lock", async () => {
   let lockName = "";
@@ -21,24 +27,33 @@ test("falls back when Web Locks are unavailable", async () => {
 
 test("returns ready after boot work succeeds", async () => {
   let calls = 0;
-  const result = await startClientApp(async () => {
-    calls += 1;
-  }, undefined);
+  const result = await startClientApp(
+    userId,
+    async () => {
+      calls += 1;
+    },
+    undefined,
+  );
 
   expect(result).toEqual({ status: "ready" });
   expect(calls).toBe(1);
 });
 
 test("returns a useful error when boot work fails", async () => {
-  const result = await startClientApp(async () => {
-    throw new Error("migration exploded");
-  }, undefined);
+  const result = await startClientApp(
+    userId,
+    async () => {
+      throw new Error("migration exploded");
+    },
+    undefined,
+  );
 
   expect(result).toEqual({ status: "error", message: "migration exploded" });
 });
 
 test("times out stuck boot work", async () => {
   const result = await startClientApp(
+    userId,
     () => new Promise<void>((resolve) => setTimeout(resolve, 50)),
     null,
     10,
@@ -64,6 +79,7 @@ test("keeps the cross-tab lock after boot times out", async () => {
   };
 
   const result = await startClientApp(
+    userId,
     () =>
       new Promise<void>((resolve) => {
         finish = resolve;

@@ -2,12 +2,14 @@ import type { ClientPg } from "@/db/client";
 
 import { createClientRepository } from "@sync-disc/db/repositories";
 import { createTestDatabase, resetTestDatabase } from "@sync-disc/db/testing";
-import { ClientId, WorkspaceId, newUuid7 } from "core";
+import { outbox } from "@sync-disc/db/client-schema";
+import { ClientId, UserId, WorkspaceId, newUuid7 } from "core";
 import { Effect, Layer, Schema } from "effect";
 import { afterAll, beforeAll, beforeEach, expect, test } from "vite-plus/test";
 
 import { Workspaces, WorkspacesLive } from "@/db/workspaces";
 import { CurrentClient } from "@/db/current-client";
+import { CurrentUserLive } from "@/db/current-user";
 import { ClientDatabase } from "@/db/client";
 
 let database: Awaited<ReturnType<typeof createTestDatabase>>;
@@ -26,21 +28,25 @@ afterAll(async () => {
 
 const createHarness = async (testDatabase: typeof database) => {
   const clientId = Schema.decodeSync(ClientId)(newUuid7());
+  const userId = Schema.decodeSync(UserId)("00000000-0000-4000-8000-000000000001");
 
   const databaseLayer = Layer.succeed(ClientDatabase, {
     pg: testDatabase.pg as unknown as ClientPg,
     db: testDatabase.db,
   });
   const currentClient = Layer.succeed(CurrentClient, { id: clientId });
-  const layer = WorkspacesLive.pipe(Layer.provide(Layer.merge(databaseLayer, currentClient)));
+  const currentUser = CurrentUserLive(userId);
+  const layer = WorkspacesLive.pipe(
+    Layer.provide(Layer.merge(databaseLayer, Layer.merge(currentClient, currentUser))),
+  );
 
   await createClientRepository(testDatabase.db).ensure(clientId);
 
-  return { clientId, layer };
+  return { clientId, userId, layer };
 };
 
 test("creates and lists workspaces for the current client", async () => {
-  const { clientId, layer } = await createHarness(database);
+  const { clientId, userId, layer } = await createHarness(database);
 
   const result = await Effect.runPromise(
     Effect.provide(
@@ -58,6 +64,8 @@ test("creates and lists workspaces for the current client", async () => {
   expect(result.listed).toHaveLength(2);
   expect(new Set(result.listed.map((row) => row.workspaceId)).size).toBe(2);
   expect(result.listed.map((row) => row.ownerClientId)).toEqual([clientId, clientId]);
+  const outboxRows = await database.db.select().from(outbox);
+  expect(outboxRows.map((row) => row.userId)).toEqual([userId, userId]);
   for (const row of result.listed) {
     expect(row.workspaceId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,

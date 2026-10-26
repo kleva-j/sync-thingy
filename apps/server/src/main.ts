@@ -9,19 +9,24 @@ import { Api } from "sync-engine";
 
 import { SyncApiHandlers, SystemApiHandlers } from "./http.ts";
 import { ServerConfig, ServerConfigLive } from "./config.ts";
-import { DevAuthLayer } from "./auth/dev-token.ts";
 import { SyncStoreLive } from "./sync/store.ts";
 import { DatabaseLive } from "./db/database.ts";
+import {
+  BetterAuthSessionLive,
+  ServerAuthRoutes,
+  ServerAuthLive,
+} from "./auth/index.ts";
 
 const Main = Layer.unwrap(
   Effect.gen(function* () {
-    const { syncDevToken, port } = yield* ServerConfig;
-
-    const SyncHandlers = SyncApiHandlers.pipe(Layer.provide(DevAuthLayer(syncDevToken)));
-
-    const AppLayer = Layer.mergeAll(SystemApiHandlers, SyncHandlers).pipe(
-      Layer.provide(SyncStoreLive),
-      Layer.provide(DatabaseLive),
+    const { port } = yield* ServerConfig;
+    const ServerAuthServices = ServerAuthLive.pipe(Layer.provideMerge(DatabaseLive));
+    const AuthServices = BetterAuthSessionLive.pipe(Layer.provideMerge(ServerAuthServices));
+    const SyncStoreServices = SyncStoreLive.pipe(Layer.provideMerge(DatabaseLive));
+    const SyncHandlers = SyncApiHandlers.pipe(Layer.provideMerge(SyncStoreServices));
+    const ProtectedAuthRoutes = ServerAuthRoutes.pipe(Layer.provideMerge(AuthServices));
+    const AppLayer = Layer.mergeAll(SystemApiHandlers, SyncHandlers, ProtectedAuthRoutes).pipe(
+      Layer.provideMerge(AuthServices),
     );
 
     const ApiRoutes = HttpApiBuilder.layer(Api, { openapiPath: "/openapi.json" }).pipe(

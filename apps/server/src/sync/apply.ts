@@ -1,5 +1,6 @@
 import type { ServerDatabase } from "@sync-disc/db/postgres";
 import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { UserId } from "core";
 
 import { and, eq, isNull } from "drizzle-orm";
 import { createHash } from "node:crypto";
@@ -96,19 +97,24 @@ function fingerprintChange(change: SyncChange): string {
   return createHash("sha256").update(canonicalJson(fingerprintableChange)).digest("hex");
 }
 
-function stateRejection(change: SyncChange, row: WorkspaceRow): SyncChangeResult | undefined {
+function stateRejection(
+  userId: UserId,
+  change: SyncChange,
+  row: WorkspaceRow,
+): SyncChangeResult | undefined {
   if (row.deletedAt !== null) {
     return rejected(change, "already_deleted", "Workspace is deleted");
   }
 
-  if (row.ownerClientId !== change.clientId) {
-    return rejected(change, "ownership", "Client does not own workspace");
+  if (row.ownerUserId !== userId) {
+    return rejected(change, "ownership", "User does not own workspace");
   }
 
   return undefined;
 }
 
 export function classifyExistingWorkspace(
+  userId: UserId,
   change: SyncChange,
   existing: WorkspaceRow | undefined,
 ): SyncChangeResult {
@@ -116,7 +122,7 @@ export function classifyExistingWorkspace(
     return rejected(change, "not_found", "Workspace not found");
   }
 
-  return stateRejection(change, existing) ?? conflict(change, existing.version);
+  return stateRejection(userId, change, existing) ?? conflict(change, existing.version);
 }
 
 async function findWorkspace<TResult extends PgQueryResultHKT>(
@@ -137,6 +143,7 @@ type LoadedWorkspace =
 
 async function loadActiveOwnedWorkspace<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   change: WorkspaceUpsertChange | WorkspaceDeleteChange,
   baseVersion: number,
 ): Promise<LoadedWorkspace> {
@@ -146,7 +153,7 @@ async function loadActiveOwnedWorkspace<TResult extends PgQueryResultHKT>(
     return { ok: false, result: rejected(change, "not_found", "Workspace not found") };
   }
 
-  const rejection = stateRejection(change, existing);
+  const rejection = stateRejection(userId, change, existing);
 
   if (rejection) {
     return { ok: false, result: rejection };
@@ -161,6 +168,7 @@ async function loadActiveOwnedWorkspace<TResult extends PgQueryResultHKT>(
 
 async function applyVersionedUpdate<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   change: WorkspaceUpsertChange | WorkspaceDeleteChange,
   existing: WorkspaceRow,
   now: Date,
@@ -187,11 +195,12 @@ async function applyVersionedUpdate<TResult extends PgQueryResultHKT>(
     return applied(change, row);
   }
 
-  return classifyExistingWorkspace(change, await findWorkspace(db, change.entityId));
+  return classifyExistingWorkspace(userId, change, await findWorkspace(db, change.entityId));
 }
 
 async function applyUpsert<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   change: WorkspaceUpsertChange,
   now: Date,
 ): Promise<SyncChangeResult> {
@@ -215,6 +224,7 @@ async function applyUpsert<TResult extends PgQueryResultHKT>(
         workspaceId: change.entityId,
         snapshotId: payload.snapshotId,
         ownerClientId: change.clientId,
+        ownerUserId: userId,
         lastModifiedByClientId: change.clientId,
         version: 1,
         createdAt: now,
@@ -231,19 +241,20 @@ async function applyUpsert<TResult extends PgQueryResultHKT>(
     return applied(change, row);
   }
 
-  const loaded = await loadActiveOwnedWorkspace(db, change, change.baseVersion);
+  const loaded = await loadActiveOwnedWorkspace(db, userId, change, change.baseVersion);
 
   if (!loaded.ok) {
     return loaded.result;
   }
 
-  return applyVersionedUpdate(db, change, loaded.row, now, {
+  return applyVersionedUpdate(db, userId, change, loaded.row, now, {
     snapshotId: payload.snapshotId,
   });
 }
 
 async function applyDelete<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   change: WorkspaceDeleteChange,
   now: Date,
 ): Promise<SyncChangeResult> {
@@ -251,17 +262,18 @@ async function applyDelete<TResult extends PgQueryResultHKT>(
     return rejected(change, "invalid_payload", "Workspace ID mismatch");
   }
 
-  const loaded = await loadActiveOwnedWorkspace(db, change, change.baseVersion);
+  const loaded = await loadActiveOwnedWorkspace(db, userId, change, change.baseVersion);
 
   if (!loaded.ok) {
     return loaded.result;
   }
 
-  return applyVersionedUpdate(db, change, loaded.row, now, { deletedAt: now });
+  return applyVersionedUpdate(db, userId, change, loaded.row, now, { deletedAt: now });
 }
 
 export async function applyChange<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   change: SyncChange,
   now: Date,
 ): Promise<SyncChangeResult> {
@@ -273,6 +285,7 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
         .insert(processedChanges)
         .values({
           changeId: change.changeId,
+          ownerUserId: userId,
           clientId: change.clientId,
           entityId: change.entityId,
           operation: change.operation,
@@ -293,6 +306,10 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
 
         if (!existing) {
           throw new Error("Processed change conflict but no row was found");
+        }
+
+        if (existing.ownerUserId !== userId) {
+          return rejected(change, "ownership", "Change does not belong to this account");
         }
 
         if (existing.fingerprint !== fingerprint) {
@@ -320,8 +337,8 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
 
       const result =
         change.operation === "upsert"
-          ? await applyUpsert(tx, change, now)
-          : await applyDelete(tx, change, now);
+          ? await applyUpsert(tx, userId, change, now)
+          : await applyDelete(tx, userId, change, now);
 
       if (result.status !== "applied") {
         throw new ChangeNotApplied(result);
@@ -344,13 +361,14 @@ export async function applyChange<TResult extends PgQueryResultHKT>(
 
 export async function applyChanges<TResult extends PgQueryResultHKT>(
   db: ServerDatabase<TResult>,
+  userId: UserId,
   changes: ReadonlyArray<SyncChange>,
   now: Date,
 ): Promise<ReadonlyArray<SyncChangeResult>> {
   const results: Array<SyncChangeResult> = [];
 
   for (const change of changes) {
-    results.push(await applyChange(db, change, now));
+    results.push(await applyChange(db, userId, change, now));
   }
 
   return results;

@@ -1,6 +1,7 @@
 import type { SyncChangeResult, SyncChange } from "sync-engine";
 import type { ServerDatabase } from "@sync-disc/db/postgres";
 import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { UserId } from "core";
 
 import { Context, Effect, Layer } from "effect";
 
@@ -9,6 +10,7 @@ import { applyChanges } from "./apply.ts";
 
 export interface SyncStoreShape {
   readonly apply: (
+    userId: UserId,
     changes: ReadonlyArray<SyncChange>,
   ) => Effect.Effect<ReadonlyArray<SyncChangeResult>>;
 }
@@ -20,7 +22,7 @@ export function makeSyncStore<TResult extends PgQueryResultHKT>(
   now: () => Date = () => new Date(),
 ): SyncStoreShape {
   return {
-    apply: (changes) => Effect.promise(() => applyChanges(db, changes, now())),
+    apply: (userId, changes) => Effect.promise(() => applyChanges(db, userId, changes, now())),
   };
 }
 

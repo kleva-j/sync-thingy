@@ -1,6 +1,8 @@
 /** @effect-diagnostics unstableApiUsage:off */
+import type { UserId } from "core";
+
 import { HttpClientRequest } from "effect/http";
-import { Schema } from "effect";
+import { Context, Schema } from "effect";
 import {
   HttpApiMiddleware,
   HttpApiEndpoint,
@@ -18,15 +20,28 @@ export class Unauthorized extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Unauthorized", { message: Schema.String }, { httpApiStatus: 401 }) {}
 
-export class DevAuth extends HttpApiMiddleware.Service<DevAuth>()("sync-disc/DevAuth", {
-  security: { bearer: HttpApiSecurity.bearer },
+export class AuthenticatedUser extends Context.Service<
+  AuthenticatedUser,
+  { readonly userId: UserId }
+>()("sync-disc/AuthenticatedUser") {}
+
+export class SessionAuth extends HttpApiMiddleware.Service<
+  SessionAuth,
+  { readonly provides: AuthenticatedUser }
+>()("sync-disc/SessionAuth", {
+  security: {
+    session: HttpApiSecurity.apiKey({
+      key: "better-auth.session_token",
+      in: "cookie",
+    }),
+  },
   error: Unauthorized,
-  requiredForClient: true,
+  requiredForClient: false,
 }) {}
 
-export const makeDevAuthClient = (token: string) =>
-  HttpApiMiddleware.layerClient(DevAuth, ({ next, request }) =>
-    next(HttpClientRequest.bearerToken(request, token)),
+export const makeSessionAuthClient = (cookie: string) =>
+  HttpApiMiddleware.layerClient(SessionAuth, ({ next, request }) =>
+    next(HttpClientRequest.setHeader(request, "cookie", cookie)),
   );
 
 export class SystemApi extends HttpApiGroup.make("system", {
@@ -44,7 +59,7 @@ export class SyncApi extends HttpApiGroup.make("sync")
       success: SyncChangesResponse,
     }),
   )
-  .middleware(DevAuth) {}
+  .middleware(SessionAuth) {}
 
 export class Api extends HttpApi.make("sync-disc-api")
   .add(SystemApi)

@@ -1,11 +1,12 @@
 import type { ClientDrizzle, WorkspaceRow } from "../client-db.ts";
-import type { ClientId, SnapshotId, WorkspaceId } from "core";
+import type { ClientId, SnapshotId, UserId, WorkspaceId } from "core";
 
 import { createWorkspaceRepository } from "./workspace-repository";
 import { createOutboxRepository } from "./outbox-repository";
 
 export interface CreateWorkspaceCommand {
   readonly clientId: ClientId;
+  readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
   readonly snapshotId: SnapshotId;
   readonly outboxId: string;
@@ -14,6 +15,7 @@ export interface CreateWorkspaceCommand {
 
 export interface RotateWorkspaceSnapshotCommand {
   readonly clientId: ClientId;
+  readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
   readonly snapshotId: SnapshotId;
   readonly outboxId: string;
@@ -22,6 +24,7 @@ export interface RotateWorkspaceSnapshotCommand {
 
 export interface DeleteWorkspaceCommand {
   readonly clientId: ClientId;
+  readonly userId: UserId;
   readonly workspaceId: WorkspaceId;
   readonly outboxId: string;
   readonly now: Date;
@@ -47,7 +50,7 @@ export function createWorkspaceWithOutbox(
     await outbox.insertPending({
       id: command.outboxId,
       clientId: command.clientId,
-      userId: null,
+      userId: command.userId,
       entity: "workspace",
       entityId: command.workspaceId,
       operation: "upsert",
@@ -86,7 +89,7 @@ export function rotateWorkspaceSnapshotWithOutbox(
     await outbox.insertPending({
       id: command.outboxId,
       clientId: command.clientId,
-      userId: null,
+      userId: command.userId,
       entity: "workspace",
       entityId: command.workspaceId,
       operation: "upsert",
@@ -125,7 +128,7 @@ export function deleteWorkspaceWithOutbox(
     await outbox.insertPending({
       id: command.outboxId,
       clientId: command.clientId,
-      userId: null,
+      userId: command.userId,
       entity: "workspace",
       entityId: command.workspaceId,
       operation: "delete",

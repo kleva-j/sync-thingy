@@ -1,0 +1,1 @@
+ALTER TABLE "processed_changes" ADD COLUMN "owner_user_id" uuid;

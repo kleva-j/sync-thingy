@@ -1,9 +1,11 @@
 import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
+export * from "./auth-schema.ts";
 export * from "./schema.ts";
 
 export const processedChanges = pgTable("processed_changes", {
   changeId: uuid("change_id").primaryKey(),
+  ownerUserId: uuid("owner_user_id"),
   clientId: uuid("client_id").notNull(),
   entityId: uuid("entity_id").notNull(),
   operation: text("operation").$type<"upsert" | "delete">().notNull(),

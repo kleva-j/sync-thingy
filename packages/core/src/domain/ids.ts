@@ -2,6 +2,10 @@ import { Schema } from "effect";
 import { uuidv7 } from "uuidv7";
 
 const Uuid7 = Schema.String.check(Schema.isUUID(7));
+const Uuid = Schema.String.check(Schema.isUUID());
+
+export const UserId = Uuid.pipe(Schema.brand("UserId"));
+export type UserId = typeof UserId.Type;
 
 export const ClientId = Uuid7.pipe(Schema.brand("ClientId"));
 export type ClientId = typeof ClientId.Type;

@@ -1,3 +1,5 @@
+import type { UserId } from "core";
+
 export type BootState =
   | { readonly status: "ready" }
   | { readonly status: "error"; readonly message: string };
@@ -25,7 +27,9 @@ export function withBootLock<A>(
   locks: BootLockManager | null | undefined = getBootLockManager(),
   signal?: AbortSignal,
 ): Promise<A> {
-  return locks ? locks.request("sync-disc-client-boot", { signal }, run) : run();
+  return locks
+    ? locks.request("sync-disc-client-boot", { signal }, run)
+    : run();
 }
 
 const createBootTimeout = (timeoutMs: number, onTimeout: () => void) => {
@@ -50,8 +54,10 @@ const createBootTimeout = (timeoutMs: number, onTimeout: () => void) => {
   };
 };
 
-const loadClientDatabase = async () => {
-  const { bootClientApp, runClientApp } = await import("./db/bootstrap");
+const loadClientDatabase = async (userId: UserId) => {
+  const { bootClientApp, initializeClientApp, runClientApp } =
+    await import("./db/bootstrap");
+  await initializeClientApp(userId);
   await runClientApp(bootClientApp);
 };
 
@@ -60,39 +66,39 @@ const deleteIndexedDatabase = (name: string): Promise<void> =>
     const request = indexedDB.deleteDatabase(name);
 
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error(`Failed to delete ${name}`));
-    request.onblocked = () => reject(new Error("Close other tabs and try again"));
+    request.onerror = () =>
+      reject(request.error ?? new Error(`Failed to delete ${name}`));
+    request.onblocked = () =>
+      reject(new Error("Close other tabs and try again"));
   });
 
-export async function resetLocalData(): Promise<void> {
-  const bootstrap = await import("./db/bootstrap").catch(() => undefined);
-  await bootstrap?.disposeClientApp();
+export async function resetLocalData(userId: UserId): Promise<void> {
+  const bootstrap = await import("./db/bootstrap");
+  await bootstrap.disposeClientApp();
 
   const databases = await indexedDB.databases?.();
+  const partitionName = `sync-disc-${userId}`;
   const names = databases
     ? databases
-      .map((database) => database.name)
-      .filter((name): name is string => Boolean(name?.includes("sync-disc")))
-    : ["/pglite/sync-disc", "sync-disc"];
+        .map((database) => database.name)
+        .filter(
+          (name): name is string =>
+            name === `/pglite/${partitionName}` || name === partitionName,
+        )
+    : [`/pglite/${partitionName}`, partitionName];
 
   await Promise.all(names.map(deleteIndexedDatabase));
-
-  if (navigator.onLine && "caches" in window) {
-    const keys = await caches.keys();
-    await Promise.all(
-      keys.filter((key) => key.startsWith("sync-disc-shell-")).map((key) => caches.delete(key)),
-    );
-  }
 }
 
 export async function startClientApp(
-  load: () => Promise<void> = loadClientDatabase,
+  userId: UserId,
+  load: (userId: UserId) => Promise<void> = loadClientDatabase,
   locks: BootLockManager | null | undefined = getBootLockManager(),
   timeoutMs = BOOT_TIMEOUT_MS,
 ): Promise<BootState> {
   const controller = new AbortController();
   const timeout = createBootTimeout(timeoutMs, () => controller.abort());
-  const boot = withBootLock(load, locks, controller.signal);
+  const boot = withBootLock(() => load(userId), locks, controller.signal);
 
   try {
     await Promise.race([boot, timeout.promise]);

@@ -3,11 +3,10 @@ import { Context, Layer } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 
-import { Api, makeDevAuthClient } from "sync-engine";
+import { Api } from "sync-engine";
 
 export interface SyncClientConfig {
   readonly baseUrl: string;
-  readonly token: string;
 }
 
 export class SyncClient extends Context.Service<SyncClient, HttpApiClient.ForApi<typeof Api>>()(
@@ -20,4 +19,4 @@ export const makeSyncClientLayer = (config: SyncClientConfig): Layer.Layer<SyncC
     HttpApiClient.make(Api, {
       baseUrl: config.baseUrl,
     }),
-  ).pipe(Layer.provide(makeDevAuthClient(config.token)), Layer.provide(FetchHttpClient.layer));
+  ).pipe(Layer.provide(FetchHttpClient.layer));

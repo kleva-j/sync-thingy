@@ -3,7 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 
 import { registerServiceWorker } from "@/service-worker";
-import { BootGate } from "@/components/boot-gate";
+import { AuthGate } from "@/components/auth-gate";
 import { queryClient } from "@/query/client";
 import { routeTree } from "@/routeTree.gen";
 
@@ -33,9 +33,9 @@ if (!rootElement.innerHTML) {
   const root = createRoot(rootElement);
   root.render(
     <QueryClientProvider client={queryClient}>
-      <BootGate>
+      <AuthGate>
         <RouterProvider router={router} />
-      </BootGate>
+      </AuthGate>
     </QueryClientProvider>,
   );
   registerServiceWorker();

@@ -1,5 +1,6 @@
 import type { BootState } from "@/boot";
 import type { ReactNode } from "react";
+import type { UserId } from "core";
 
 import { Button } from "@sync-disc/ui/components/button";
 import { useEffect, useState } from "react";
@@ -10,7 +11,13 @@ import Loader from "./loader";
 
 type BootStatus = BootState | { readonly status: "loading" };
 
-export function BootGate({ children }: { readonly children: ReactNode }) {
+export function BootGate({
+  children,
+  userId,
+}: {
+  readonly children: ReactNode;
+  readonly userId: UserId;
+}) {
   const [state, setState] = useState<BootStatus>({ status: "loading" });
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState<string | undefined>();
@@ -18,7 +25,7 @@ export function BootGate({ children }: { readonly children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    startClientApp()
+    startClientApp(userId)
       .then((next) => {
         if (mounted) setState(next);
       })
@@ -33,8 +40,13 @@ export function BootGate({ children }: { readonly children: ReactNode }) {
 
     return () => {
       mounted = false;
+      void import("@/db/bootstrap").then(({ disposeClientApp }) =>
+        disposeClientApp().catch((cause: unknown) => {
+          console.error("Failed to close the local workspace database", cause);
+        }),
+      );
     };
-  }, []);
+  }, [userId]);
 
   if (state.status === "loading") {
     return (
@@ -54,7 +66,7 @@ export function BootGate({ children }: { readonly children: ReactNode }) {
       setResetting(true);
       setResetError(undefined);
 
-      resetLocalData()
+      resetLocalData(userId)
         .then(() => window.location.reload())
         .catch((cause: unknown) => {
           setResetting(false);

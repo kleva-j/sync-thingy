@@ -2,7 +2,7 @@
 import { HttpApiBuilder } from "effect/http-api";
 import { Effect } from "effect";
 
-import { Api } from "sync-engine";
+import { Api, AuthenticatedUser } from "sync-engine";
 
 import { SyncStore } from "./sync/store.ts";
 
@@ -20,7 +20,11 @@ export const SyncApiHandlers = HttpApiBuilder.group(
 
     return handlers.handleAll({
       syncChanges: ({ payload }) =>
-        store.apply(payload.changes).pipe(Effect.map((results) => ({ results }))),
+        Effect.gen(function* () {
+          const { userId } = yield* AuthenticatedUser;
+          const results = yield* store.apply(userId, payload.changes);
+          return { results };
+        }),
     });
   }),
 );

@@ -33,18 +33,22 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.7.12",
     "@effect/platform-node": "catalog:",
     "@sync-disc/config": "workspace:*",
     "@sync-disc/db": "workspace:*",
+    "better-auth": "1.7.12",
     "core": "workspace:*",
     "drizzle-orm": "0.45.4",
     "effect": "catalog:",
+    "nodemailer": "10.2.1",
     "sync-engine": "workspace:*",
     "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
     "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
     "bumpp": "^12.3.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
